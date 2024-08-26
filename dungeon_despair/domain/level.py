@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 
 import PIL
 from pydantic.v1 import BaseModel, Field
@@ -8,6 +8,7 @@ from pydantic.v1 import BaseModel, Field
 from dungeon_despair.domain.configs import config
 from dungeon_despair.domain.corridor import Corridor
 from dungeon_despair.domain.room import Room
+from dungeon_despair.domain.utils import Direction
 
 
 class Level(BaseModel):
@@ -16,7 +17,8 @@ class Level(BaseModel):
 
 	rooms: Dict[str, Room] = Field(default={}, description="The rooms in the level.", required=True)
 	corridors: Dict[str, Corridor] = Field(default={}, description="The corridors in the level.", required=True)
-
+	connections: Dict[str, Dict[Direction, str]] = Field(default={}, description="The connections in the level.", required=True)
+	
 	current_room: str = Field(default='', description="The currently selected room.", required=True)
 	
 	def save_to_file(self, filename: str, conversation: str) -> None:
@@ -65,3 +67,6 @@ class Level(BaseModel):
 			c_name = f'{room_to_name}-{room_from_name}'
 			corridor = self.corridors.get(c_name, None)
 		return corridor
+	
+	def get_corridors_by_room(self, room_name) -> List[Corridor]:
+		return [corridor for corridor in self.corridors.values() if corridor.room_from == room_name or corridor.room_to == room_name]
