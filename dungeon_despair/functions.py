@@ -15,9 +15,6 @@ from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_
     derive_rooms_from_corridor_name, make_corridor_name, get_encounter
 
 
-# TODO: Add functions to add/update/remove attacks to enemies
-
-
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     def try_call_func(self,
