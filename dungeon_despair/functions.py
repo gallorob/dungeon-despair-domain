@@ -563,11 +563,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
     @LibParam(enemy_name='The unique name of the enemy.')
     @LibParam(name='The unique name of the attack.')
-    def add_attack(self, level: Level,
-                   room_name: str,
-                   cell_index: int,
-                   enemy_name: str,
-                   name: str) -> str:
+    def remove_attack(self, level: Level,
+                      room_name: str,
+                      cell_index: int,
+                      enemy_name: str,
+                      name: str) -> str:
         encounter = get_encounter(level, room_name, cell_index)
         enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
             [entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
