@@ -1,11 +1,8 @@
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from pydantic.v1 import BaseModel, Field
 
-from dungeon_despair.domain.entities.enemy import Enemy
 from dungeon_despair.domain.entities.entity import Entity
-from dungeon_despair.domain.entities.trap import Trap
-from dungeon_despair.domain.entities.treasure import Treasure
 from dungeon_despair.domain.utils import EntityEnum
 
 
