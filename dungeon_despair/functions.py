@@ -2,6 +2,7 @@ import json
 
 from gptfunctionutil import AILibFunction, GPTFunctionLibrary, LibParam, LibParamSpec
 
+from dungeon_despair.domain.attack import Attack
 from dungeon_despair.domain.configs import config
 from dungeon_despair.domain.corridor import Corridor
 from dungeon_despair.domain.encounter import Encounter
@@ -34,11 +35,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             })
             return operation_result
         except AssertionError as e:
-            return str(e)  # TODO: A nicer way to do this would be to raise a custom exception class so that the LLMs understands better
+            return str(
+                e)  # TODO: A nicer way to do this would be to raise a custom exception class so that the LLMs understands better
 
     @AILibFunction(name='create_room', description='Create a room in the level.',
                    required=['name', 'description', 'room_from', 'direction'])
-
     @LibParam(name='The room name')
     @LibParam(description='The room physical characteristics')
     @LibParam(
@@ -57,11 +58,13 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             assert room_from != '', f'Could not add {name} to the level: room_from must be set if there exists a current room (current room is {level.current_room}).'
             assert direction != '', f'Could not add {name} to the level: direction must be set if there exists a current room (current room is {level.current_room}).'
         if room_from != '':
-            assert is_corridor(level.current_room), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either {derive_rooms_from_corridor_name(level.current_room)[0]} or {derive_rooms_from_corridor_name(level.current_room)[1]}.'
+            assert is_corridor(
+                level.current_room), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either {derive_rooms_from_corridor_name(level.current_room)[0]} or {derive_rooms_from_corridor_name(level.current_room)[1]}.'
             assert room_from in level.rooms.keys(), f'{room_from} is not a valid room name.'
             dir_enum = get_enum_by_value(Direction, direction)
             assert dir_enum is not None, f'Could not add {name} to the level: {direction} is not a valid direction.'
-            assert level.connections[room_from][dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
+            assert level.connections[room_from][
+                       dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
             # try add corridor to connecting room
             n = len(level.get_corridors_by_room(name)) // 2
             # can only add corridor if the connecting room has at most 3 corridors already
@@ -327,7 +330,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                  description: str,
                  effect: str,
                  cell_index: int) -> str:
-        assert is_corridor(corridor_name), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
+        assert is_corridor(
+            corridor_name), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
         corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
         assert corridor is not None, f'Corridor {corridor_name} does not exist.'
         assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
@@ -345,7 +349,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                    required=['room_name', 'cell_index', 'reference_name', 'name', 'description', 'species', 'hp',
                              'dodge', 'prot', 'spd'])
     @LibParam(room_name='The room (or corridor) name')
-    @LibParam(cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
+    @LibParam(
+        cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
     @LibParam(reference_name='The reference name of the enemy to update')
     @LibParam(name='The unique updated name of the enemy')
     @LibParam(description='The unique updated physical characteristics of thr enemy')
@@ -359,23 +364,25 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
     @LibParamSpec(name='spd',
                   description=f'The speed points of the enemy, the value must be between {config.min_spd} and {config.max_spd}.')
     def update_enemy_properties(self, level: Level,
-                                  room_name: str,
-                                  reference_name: str,
-                                  name: str,
-                                  description: str,
-                                  species: str,
-                                  hp: int,
-                                  dodge: int,
-                                  prot: float,
-                                  spd: int,
-                                  cell_index: int) -> str:
+                                room_name: str,
+                                reference_name: str,
+                                name: str,
+                                description: str,
+                                species: str,
+                                hp: int,
+                                dodge: int,
+                                prot: float,
+                                spd: int,
+                                cell_index: int) -> str:
         assert config.min_hp <= hp <= config.max_hp, f'Invalid hp value: {hp}; should be between {config.min_hp} and {config.max_hp}.'
         assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and {config.max_dodge}.'
         assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and {config.max_prot}.'
         assert config.min_spd <= spd <= config.max_spd, f'Invalid spd value: {spd}; should be between {config.min_spd} and {config.max_spd}.'
         encounter = get_encounter(level, room_name, cell_index)
-        assert reference_name in [enemy.name for enemy in encounter.entities[EntityEnum.ENEMY.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-        assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.entities[EntityEnum.ENEMY.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        assert reference_name in [enemy.name for enemy in encounter.entities[
+            EntityEnum.ENEMY.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.entities[
+            EntityEnum.ENEMY.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         updated_enemy = Enemy(name=name, description=description, species=species,
                               hp=hp, dodge=dodge, prot=prot, spd=spd)
         encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
@@ -392,15 +399,17 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
     @LibParam(description='The updated physical characteristics of the treasure')
     @LibParam(loot='The updated loot description of the treasure')
     def update_treasure_properties(self, level: Level,
-                                    room_name: str,
-                                    reference_name: str,
-                                    name: str,
-                                    description: str,
-                                    loot: str,
-                                    cell_index: int) -> str:
+                                   room_name: str,
+                                   reference_name: str,
+                                   name: str,
+                                   description: str,
+                                   loot: str,
+                                   cell_index: int) -> str:
         encounter = get_encounter(level, room_name, cell_index)
-        assert reference_name in [treasure.name for treasure in encounter.entities[EntityEnum.TREASURE.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-        assert (reference_name == name) or (name not in [treasure.name for treasure in encounter.entities[EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        assert reference_name in [treasure.name for treasure in encounter.entities[
+            EntityEnum.TREASURE.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        assert (reference_name == name) or (name not in [treasure.name for treasure in encounter.entities[
+            EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         updated_treasure = Treasure(name=name, description=description, loot=loot)
         encounter.replace_entity(reference_name, EntityEnum.TREASURE, updated_treasure)
         return f'Updated {reference_name} properties in {room_name}.'
@@ -426,8 +435,10 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         assert corridor is not None, f'Corridor {corridor_name} does not exist.'
         assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
         encounter = corridor.encounters[cell_index - 1]
-        assert reference_name in [trap.name for trap in encounter.entities[EntityEnum.TRAP.value]], f'{reference_name} does not exist in {corridor_name} in cell {cell_index}.'
-        assert (reference_name == name) or (name not in [trap.name for trap in encounter.entities[EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
+        assert reference_name in [trap.name for trap in encounter.entities[
+            EntityEnum.TRAP.value]], f'{reference_name} does not exist in {corridor_name} in cell {cell_index}.'
+        assert (reference_name == name) or (name not in [trap.name for trap in encounter.entities[
+            EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
         updated_trap = Trap(name=name, description=description, effect=effect)
         encounter.replace_entity(reference_name, EntityEnum.TRAP, updated_trap)
         return f'Updated {reference_name} properties in {corridor_name}.'
@@ -436,17 +447,134 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                    description="Remove an entity (an enemy, a trap, or a treasure) from a room or corridor",
                    required=['room_name', 'cell_index', 'entity_name', 'entity_type'])
     @LibParam(room_name='The room (or corridor) name')
-    @LibParam(cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
+    @LibParam(
+        cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
     @LibParam(entity_name='The name of the entity')
     @LibParam(entity_type='The type of the entity; must be of "enemy", "trap", or "treasure"')
     def remove_entity(self, level: Level,
-                        room_name: str,
-                        entity_name: str,
-                        entity_type: str,
-                        cell_index: int) -> str:
+                      room_name: str,
+                      entity_name: str,
+                      entity_type: str,
+                      cell_index: int) -> str:
         entity_enum = get_enum_by_value(EntityEnum, entity_type)
         assert entity_enum is not None, f'Invalid entity type: {entity_type}.'
         encounter = get_encounter(level, room_name, cell_index)
-        assert entity_name in [entity.name for entity in encounter.entities[entity_enum.value]], f'{entity_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        assert entity_name in [entity.name for entity in encounter.entities[
+            entity_enum.value]], f'{entity_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         encounter.remove_entity_by_name(entity_enum, entity_name)
         return f'Removed {entity_name} from {room_name}.'
+
+    @AILibFunction(name='add_attack', description='Add an attack to an enemy.',
+                   required=['room_name', 'cell_index', 'enemy_name', 'name', 'description', 'starting_positions',
+                             'target_positions', 'base_dmg'])
+    @LibParam(room_name='The room (or corridor) name')
+    @LibParam(
+        cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
+    @LibParam(enemy_name='The unique name of the enemy.')
+    @LibParam(name='The unique name of the attack.')
+    @LibParam(description='The description of the attack.')
+    @LibParam(
+        starting_positions='A string of 4 characters describing the positions from which the attack can be executed. Use "X" where the attack can be executed from, and "O" otherwise.')
+    @LibParam(
+        target_positions='A string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
+    @LibParamSpec(name='base_dmg',
+                  description=f'The base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
+    def add_attack(self, level: Level,
+                   room_name: str,
+                   cell_index: int,
+                   enemy_name: str,
+                   name: str,
+                   description: str,
+                   starting_positions: str,
+                   target_positions: str,
+                   base_dmg: float) -> str:
+        assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
+        encounter = get_encounter(level, room_name, cell_index)
+        assert len(
+            starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
+        assert len(
+            target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
+        assert set(starting_positions) == set[
+            'X', 'O'], f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
+        assert set(target_positions) == set[
+            'X', 'O'], f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+        assert enemy_name in [entity.name for entity in encounter.entities[
+            EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
+            [entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
+        assert len(
+            enemy.attacks) < config.max_num_attacks, f'Enemy {enemy.name} has {config.max_num_attacks}, which is the maximum amount allowed.'
+        attack = Attack(name=name, description=description, starting_positions=starting_positions,
+                        target_positions=target_positions, base_dmg=base_dmg)
+        enemy.attacks.append(attack)
+        return f'Added {name} to {enemy_name}.'
+
+    @AILibFunction(name='update_attack',
+                   description="Update an attack of an enemy. Pass the current properties if they're not being updated.",
+                   required=['room_name', 'cell_index', 'enemy_name', 'reference_name', 'name', 'description',
+                             'starting_positions',
+                             'target_positions', 'base_dmg'])
+    @LibParam(room_name='The room (or corridor) name')
+    @LibParam(
+        cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
+    @LibParam(enemy_name='The unique name of the enemy.')
+    @LibParam(reference_name='The reference name of the attack to update')
+    @LibParam(name='The updated unique name of the attack.')
+    @LibParam(description='The updated description of the attack.')
+    @LibParam(
+        starting_positions='The updated string of 4 characters describing the positions from which the attack can be executed. Use "X" where the attack can be executed from, and "O" otherwise.')
+    @LibParam(
+        target_positions='The updated string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
+    @LibParamSpec(name='base_dmg',
+                  description=f'The updated base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
+    def update_attack(self, level: Level,
+                      room_name: str,
+                      cell_index: int,
+                      enemy_name: str,
+                      reference_name: str,
+                      name: str,
+                      description: str,
+                      starting_positions: str,
+                      target_positions: str,
+                      base_dmg: float) -> str:
+        assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
+        encounter = get_encounter(level, room_name, cell_index)
+        assert len(
+            starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
+        assert len(
+            target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
+        assert set(starting_positions) == set[
+            'X', 'O'], f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
+        assert set(target_positions) == set[
+            'X', 'O'], f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+        assert enemy_name in [entity.name for entity in encounter.entities[
+            EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+        enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
+            [entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
+        assert reference_name in [attack.name for attack in
+                                  enemy.attacks], f'{reference_name} is not an attack for {enemy_name}.'
+        idx = [attack.name for attack in enemy.attacks].index(reference_name)
+        attack = Attack(name=name, description=description, starting_positions=starting_positions,
+                        target_positions=target_positions, base_dmg=base_dmg)
+        enemy.attacks[idx] = attack
+        return f'Updated {reference_name} of {enemy_name}.'
+
+    @AILibFunction(name='remove_attack', description='Remove an attack from an enemy.',
+                   required=['room_name', 'cell_index', 'enemy_name', 'name'])
+    @LibParam(room_name='The room (or corridor) name')
+    @LibParam(
+        cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
+    @LibParam(enemy_name='The unique name of the enemy.')
+    @LibParam(name='The unique name of the attack.')
+    def add_attack(self, level: Level,
+                   room_name: str,
+                   cell_index: int,
+                   enemy_name: str,
+                   name: str) -> str:
+        encounter = get_encounter(level, room_name, cell_index)
+        enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
+            [entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
+        assert name in [attack.name for attack in enemy.attacks], f'{name} is not an attack for {enemy_name}.'
+        idx = [attack.name for attack in enemy.attacks].index(name)
+        enemy.attacks.pop(idx)
+        return f'Removed {name} from {enemy_name}.'
