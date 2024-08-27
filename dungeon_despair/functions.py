@@ -10,12 +10,12 @@ from dungeon_despair.domain.entities.trap import Trap
 from dungeon_despair.domain.entities.treasure import Treasure
 from dungeon_despair.domain.level import Level
 from dungeon_despair.domain.room import Room
-from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum
+from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, is_corridor, \
+    derive_rooms_from_corridor_name, make_corridor_name, get_encounter
 
 
 # TODO: Add functions to add/update/remove attacks to enemies
-# TODO: Extract common logic methods
-# TODO: Change check orders for whether name is a room or a corridor: should check if it's a room first (dict lookup)
+
 
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
@@ -57,15 +57,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             assert room_from != '', f'Could not add {name} to the level: room_from must be set if there exists a current room (current room is {level.current_room}).'
             assert direction != '', f'Could not add {name} to the level: direction must be set if there exists a current room (current room is {level.current_room}).'
         if room_from != '':
-            is_corridor = level.current_room.split('-')
-            if len(is_corridor) == 2:
-                raise AssertionError(
-                    f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either {is_corridor[0]} or {is_corridor[1]}.')
+            assert is_corridor(level.current_room), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either {derive_rooms_from_corridor_name(level.current_room)[0]} or {derive_rooms_from_corridor_name(level.current_room)[1]}.'
             assert room_from in level.rooms.keys(), f'{room_from} is not a valid room name.'
             dir_enum = get_enum_by_value(Direction, direction)
             assert dir_enum is not None, f'Could not add {name} to the level: {direction} is not a valid direction.'
-            assert level.connections[room_from][
-                       dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
+            assert level.connections[room_from][dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
             # try add corridor to connecting room
             n = len(level.get_corridors_by_room(name)) // 2
             # can only add corridor if the connecting room has at most 3 corridors already
@@ -184,7 +180,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         level.connections[room_from_name][dir_enum] = room_to_name
         level.connections[room_to_name][opposite_direction[dir_enum]] = room_from_name
         corridor = Corridor(room_from=room_from_name, room_to=room_to_name,
-                            name=f'{room_from_name}-{room_to_name}',
+                            name=make_corridor_name(room_from_name, room_to_name),
                             length=corridor_length,
                             encounters=[Encounter() for _ in range(corridor_length)])
         level.corridors[corridor.name] = corridor
@@ -285,21 +281,13 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and  {config.max_dodge}.'
         assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and  {config.max_prot}.'
         assert config.min_spd <= spd <= config.max_spd, f'Invalid spd value: {spd}; should be between {config.min_spd} and  {config.max_spd}.'
-        if len(room_name.split('-')) == 2:
-            corridor = level.get_corridor(*room_name.split('-'), ordered=False)
-            assert corridor is not None, f'Corridor {room_name} does not exist.'
-            assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
-            encounter = corridor.encounters[cell_index - 1]
-        else:
-            room = level.rooms.get(room_name, None)
-            assert room is not None, f'Room {room_name} does not exist.'
-            encounter = room.encounter
+        encounter = get_encounter(level, room_name, cell_index)
         assert name not in [enemy.name for enemy in encounter.entities[
             EntityEnum.ENEMY.value]], f'Could not add enemy: {name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         assert len(encounter.entities.get(EntityEnum.ENEMY.value,
                                           [])) < config.max_enemies_per_encounter, f'Could not add enemy: there are already {config.max_enemies_per_encounter} enemy(es) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed.'
         enemy = Enemy(name=name, description=description, species=species, hp=hp, dodge=dodge, prot=prot, spd=spd)
-        encounter.entities[EntityEnum.ENEMY.value].append(enemy)
+        encounter.add_entity(EntityEnum.ENEMY, enemy)
         return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 
     @AILibFunction(name='add_treasure', description='Add a treasure to a room or corridor',
@@ -316,21 +304,13 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                      description: str,
                      loot: str,
                      cell_index: int) -> str:
-        if len(room_name.split('-')) == 2:
-            corridor = level.get_corridor(*room_name.split('-'), ordered=False)
-            assert corridor is not None, f'Corridor {room_name} does not exist.'
-            assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
-            encounter = corridor.encounters[cell_index - 1]
-        else:
-            room = level.rooms.get(room_name, None)
-            assert room is not None, f'Room {room_name} does not exist.'
-            encounter = room.encounter
+        encounter = get_encounter(level, room_name, cell_index)
         assert name not in [treasure.name for treasure in encounter.entities[
             EntityEnum.TREASURE.value]], f'Could not add treasure: {name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         assert 0 < len(encounter.entities.get(EntityEnum.TREASURE.value,
                                               [])) < config.max_treasures_per_encounter, f'Could not add treasure: there is already {config.max_treasures_per_encounter} treasure(s) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed..'
         treasure = Treasure(name=name, description=description, loot=loot)
-        encounter.entities[EntityEnum.TREASURE.value].append(treasure)
+        encounter.add_entity(EntityEnum.TREASURE, treasure)
         return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 
     @AILibFunction(name='add_trap',
@@ -347,9 +327,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                  description: str,
                  effect: str,
                  cell_index: int) -> str:
-        assert len(corridor_name.split(
-            '-')) == 2, f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
-        corridor = level.get_corridor(*corridor_name.split('-'), ordered=False)
+        assert is_corridor(corridor_name), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
+        corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
         assert corridor is not None, f'Corridor {corridor_name} does not exist.'
         assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
         encounter = corridor.encounters[cell_index - 1]
@@ -358,7 +337,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         assert 0 < len(encounter.entities.get(EntityEnum.TRAP.value,
                                               [])) < config.max_traps_per_encounter, f'Could not add trap: there is already {config.max_traps_per_encounter} trap(s) in {corridor_name} in cell {cell_index}.'
         trap = Trap(name=name, description=description, effect=effect)
-        encounter.entities[EntityEnum.TRAP.value].append(trap)
+        encounter.add_entity(EntityEnum.TRAP, trap)
         return f'Added {name} in {corridor_name} in cell {cell_index}.'
 
     @AILibFunction(name='update_enemy_properties',
@@ -394,24 +373,12 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and {config.max_dodge}.'
         assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and {config.max_prot}.'
         assert config.min_spd <= spd <= config.max_spd, f'Invalid spd value: {spd}; should be between {config.min_spd} and {config.max_spd}.'
-        if len(room_name.split('-')) == 2:
-            corridor = level.get_corridor(*room_name.split('-'), ordered=False)
-            assert corridor is not None, f'Corridor {room_name} does not exist.'
-            assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
-            encounter = corridor.encounters[cell_index - 1]
-        else:
-            room = level.rooms.get(room_name, None)
-            assert room is not None, f'Room {room_name} does not exist.'
-            encounter = room.encounter
+        encounter = get_encounter(level, room_name, cell_index)
         assert reference_name in [enemy.name for enemy in encounter.entities[EntityEnum.ENEMY.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.entities[EntityEnum.ENEMY.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-        idx = [enemy.name for enemy in encounter.entities[EntityEnum.ENEMY.value]].index(reference_name)
-        prev_enemy = encounter.entities[EntityEnum.ENEMY.value][idx]
         updated_enemy = Enemy(name=name, description=description, species=species,
                               hp=hp, dodge=dodge, prot=prot, spd=spd)
-        if prev_enemy.description == description:
-            updated_enemy.sprite = prev_enemy.sprite
-        encounter.entities[EntityEnum.ENEMY.value][idx] = updated_enemy
+        encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
         return f'Updated {reference_name} properties in {room_name}.'
 
     @AILibFunction(name='update_treasure_properties',
@@ -431,23 +398,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                                     description: str,
                                     loot: str,
                                     cell_index: int) -> str:
-        if len(room_name.split('-')) == 2:
-            corridor = level.get_corridor(*room_name.split('-'), ordered=False)
-            assert corridor is not None, f'Corridor {room_name} does not exist.'
-            assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
-            encounter = corridor.encounters[cell_index - 1]
-        else:
-            room = level.rooms.get(room_name, None)
-            assert room is not None, f'Room {room_name} does not exist.'
-            encounter = room.encounter
+        encounter = get_encounter(level, room_name, cell_index)
         assert reference_name in [treasure.name for treasure in encounter.entities[EntityEnum.TREASURE.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
         assert (reference_name == name) or (name not in [treasure.name for treasure in encounter.entities[EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-        idx = [treasure.name for treasure in encounter.entities[EntityEnum.TREASURE.value]].index(reference_name)
-        prev_treasure = encounter.entities[EntityEnum.TREASURE.value][idx]
         updated_treasure = Treasure(name=name, description=description, loot=loot)
-        if prev_treasure.description == description:
-            updated_treasure.sprite = prev_treasure.sprite
-        encounter.entities[EntityEnum.TREASURE.value][idx] = updated_treasure
+        encounter.replace_entity(reference_name, EntityEnum.TREASURE, updated_treasure)
         return f'Updated {reference_name} properties in {room_name}.'
 
     @AILibFunction(name='update_trap_properties',
@@ -467,18 +422,14 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                                description: str,
                                effect: str,
                                cell_index: int = None) -> str:
-        corridor = level.get_corridor(*corridor_name.split('-'), ordered=False)
+        corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
         assert corridor is not None, f'Corridor {corridor_name} does not exist.'
         assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
         encounter = corridor.encounters[cell_index - 1]
         assert reference_name in [trap.name for trap in encounter.entities[EntityEnum.TRAP.value]], f'{reference_name} does not exist in {corridor_name} in cell {cell_index}.'
         assert (reference_name == name) or (name not in [trap.name for trap in encounter.entities[EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
-        idx = [trap.name for trap in encounter.entities[EntityEnum.TRAP.value]].index(reference_name)
-        prev_trap = encounter.entities[EntityEnum.TRAP.value][idx]
         updated_trap = Trap(name=name, description=description, effect=effect)
-        if prev_trap.description == description:
-            updated_trap.sprite = prev_trap.sprite
-        encounter.entities[EntityEnum.TRAP.value][idx] = updated_trap
+        encounter.replace_entity(reference_name, EntityEnum.TRAP, updated_trap)
         return f'Updated {reference_name} properties in {corridor_name}.'
 
     @AILibFunction(name='remove_entity',
@@ -495,16 +446,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                         cell_index: int) -> str:
         entity_enum = get_enum_by_value(EntityEnum, entity_type)
         assert entity_enum is not None, f'Invalid entity type: {entity_type}.'
-        if len(room_name.split('-')) == 2:
-            corridor = level.get_corridor(*room_name.split('-'), ordered=False)
-            assert corridor is not None, f'Corridor {room_name} does not exist.'
-            assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
-            encounter = corridor.encounters[cell_index - 1]
-        else:
-            room = level.rooms.get(room_name, None)
-            assert room is not None, f'Room {room_name} does not exist.'
-            encounter = room.encounter
+        encounter = get_encounter(level, room_name, cell_index)
         assert entity_name in [entity.name for entity in encounter.entities[entity_enum.value]], f'{entity_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-        idx = [entity.name for entity in encounter.entities[entity_enum.value]].index(entity_name)
-        encounter.entities[entity_enum.value].pop(idx)
+        encounter.remove_entity_by_name(entity_enum, entity_name)
         return f'Removed {entity_name} from {room_name}.'
