@@ -3,7 +3,6 @@ from typing import Dict, List
 
 from dungeon_despair.domain.configs import config
 from dungeon_despair.domain.encounter import Encounter
-from dungeon_despair.domain.entities.entity import Entity
 from dungeon_despair.domain.level import Level
 
 

@@ -32,8 +32,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             })
             return operation_result
         except AssertionError as e:
-            return str(
-                e)  # TODO: A nicer way to do this would be to raise a custom exception class so that the LLMs understands better
+            return f'Domain validation error: {e}'
 
     @AILibFunction(name='create_room', description='Create a room in the level.',
                    required=['name', 'description', 'room_from', 'direction'])
