@@ -16,6 +16,13 @@ from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_
 
 
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
+    def get_func_list(self):
+        return [self.create_room, self.update_room, self.remove_room,
+                self.add_corridor, self.update_corridor, self.remove_corridor,
+                self.add_enemy, self.add_trap, self.add_treasure,
+                self.update_enemy_properties, self.update_trap_properties, self.update_treasure_properties,
+                self.remove_entity,
+                self.add_attack, self.update_attack, self.remove_attack]
 
     def try_call_func(self,
                       func_name: str,

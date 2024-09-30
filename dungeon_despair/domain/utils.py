@@ -2,8 +2,6 @@ from enum import Enum
 from typing import Dict, List
 
 from dungeon_despair.domain.configs import config
-from dungeon_despair.domain.encounter import Encounter
-from dungeon_despair.domain.level import Level
 
 
 class Direction(Enum):
@@ -54,9 +52,9 @@ def is_corridor(name: str) -> bool:
     return len(derive_rooms_from_corridor_name(name)) == 2
 
 
-def get_encounter(level: Level,
+def get_encounter(level: "Level",
                   room_name: str,
-                  cell_index: int) -> Encounter:
+                  cell_index: int) -> "Encounter":
     if not is_corridor(room_name):
         room = level.rooms.get(room_name, None)
         assert room is not None, f'Room {room_name} does not exist.'
