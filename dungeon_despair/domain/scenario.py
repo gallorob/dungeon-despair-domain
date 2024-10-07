@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from typing import Tuple
 
 from dungeon_despair.domain.level import Level
 
@@ -13,6 +12,8 @@ class ScenarioType(Enum):
 def check_level_playability(level: Level,
                             condition: ScenarioType) -> bool:
 	if condition == ScenarioType.EXPLORE:
+		# Current room must always be a room
+		assert level.current_room in level.rooms.keys(), f'Current room must be a room and not a corridor (currently: {level.current_room}).'
 		# Explore mission require at least three rooms
 		assert len(level.rooms) >= 3, f'Explore missions should have at least 3 rooms; found: {len(level.rooms)}.'
 		# Check all enemies have at least 1 attack

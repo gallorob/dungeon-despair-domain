@@ -41,8 +41,6 @@ class Level(BaseModel):
 				image.save(os.path.join(config.temp_dir, fpath))
 			return bin_data['level'], bin_data['conversation']
 	
-	# TODO: Scenario check
-	
 	def export_level_as_scenario(self,
 	                             filename: str) -> None:
 		# get all sprites
