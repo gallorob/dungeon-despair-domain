@@ -21,20 +21,9 @@ class Level(BaseModel):
 	
 	current_room: str = Field(default='', description="The currently selected room.", required=True)
 	
+	# TODO: Saving level should export all images, Exporting should only save sprites
 	def save_to_file(self, filename: str, conversation: str) -> None:
-		# get all images
-		all_images = []
-		for room in self.rooms.values():
-			all_images.append(room.sprite)
-			for entity_type in room.encounter.entities.keys():
-				for entity in room.encounter.entities[entity_type]:
-					all_images.append(entity.sprite)
-		for corridor in self.corridors.values():
-			all_images.append(corridor.sprite)
-			for encounter in corridor.encounters:
-				for entity_type in encounter.entities.keys():
-					for entity in encounter.entities[entity_type]:
-						all_images.append(entity.sprite)
+		all_images = os.listdir(config.temp_dir)
 		images = {image_path: PIL.Image.open(os.path.join(config.temp_dir, image_path)) for image_path in all_images}
 		bin_data = {
 			'level': self,
@@ -52,6 +41,40 @@ class Level(BaseModel):
 			for fpath, image in images.items():
 				image.save(os.path.join(config.temp_dir, fpath))
 			return bin_data['level'], bin_data['conversation']
+	
+	# TODO: Scenario check
+	
+	def export_level_as_scenario(self,
+	                             filename: str) -> None:
+		# get all sprites
+		all_sprites = []
+		for room in self.rooms.values():
+			all_sprites.append(os.path.basename(room.sprite))
+			for entity_type in room.encounter.entities.keys():
+				for entity in room.encounter.entities[entity_type]:
+					all_sprites.append(os.path.basename(entity.sprite))
+		for corridor in self.corridors.values():
+			all_sprites.extend(os.path.basename(corridor.sprites))
+			for encounter in corridor.encounters:
+				for entity_type in encounter.entities.keys():
+					for entity in encounter.entities[entity_type]:
+						all_sprites.append(os.path.basename(entity.sprite))
+		sprites = {sprite_path: PIL.Image.open(os.path.join(config.temp_dir, sprite_path)) for sprite_path in all_sprites}
+		bin_data = {
+			'level': self,
+			'sprites': sprites,
+		}
+		with open(filename, 'wb') as f:
+			pickle.dump(bin_data, f)
+	
+	@staticmethod
+	def load_as_scenario(filename: str) -> "Level":
+		with open(filename, 'rb') as f:
+			bin_data = pickle.load(f)
+			sprites = bin_data['sprites']
+			for fpath, sprite in sprites.items():
+				sprite.save(os.path.join(config.temp_dir, fpath))
+			return bin_data['level']
 
 	def __str__(self) -> str:
 		# This is the GLOBAL level description
@@ -70,3 +93,27 @@ class Level(BaseModel):
 	
 	def get_corridors_by_room(self, room_name) -> List[Corridor]:
 		return [corridor for corridor in self.corridors.values() if corridor.room_from == room_name or corridor.room_to == room_name]
+	
+	def get_level_subset(self,
+	                     corridor: Corridor,
+	                     opposite_direction: bool = False) -> Tuple[List[Room], List[Corridor]]:
+		# This method assumes that the corridor is NOT part of a loop
+		rooms, corridors = [], []
+		to_expand = [corridor.room_to] if not opposite_direction else [corridor.room_from]
+		while len(to_expand) > 0:
+			for area in to_expand:
+				if area in self.rooms.keys():
+					rooms.append(self.rooms[area])
+					if opposite_direction:
+						to_expand.extend([c.name for c in self.get_corridors_by_room(area) if c.room_from != area and c.name not in corridors])
+					else:
+						to_expand.extend([c.name for c in self.get_corridors_by_room(area) if c.room_to != area and c.name not in corridors])
+				else:
+					corridors.append(self.corridors[area])
+					if self.corridors[area].room_to not in rooms:
+						if opposite_direction:
+							to_expand.append(self.corridors[area].room_from)
+						else:
+							to_expand.append(self.corridors[area].room_to)
+				to_expand.remove(area)
+		return rooms, corridors

@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from pydantic.v1 import BaseModel, Field
 
 from dungeon_despair.domain.encounter import Encounter
@@ -9,6 +11,7 @@ class Room(BaseModel):
 
 	name: str = Field(..., description="The name of the room.", required=True)
 	description: str = Field(..., description="The description of the room", required=True)
+	coords: Tuple[int, int] = Field(default=(0, 0), description='The coordinates of the room.', required=True)
 	encounter: Encounter = Field(default=Encounter(), description='The encounter in the room.', required=True)
 	sprite: str = Field(default=None, description='The sprite for the room.', required=False)
 

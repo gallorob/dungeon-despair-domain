@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from pydantic.v1 import BaseModel, Field
 
@@ -19,7 +19,8 @@ class Corridor(BaseModel):
 	length: int = Field(default=config.corridor_min_length, description="The length of the corridor", required=True)
 	encounters: List[Encounter] = Field(default=[Encounter() for _ in range(config.corridor_min_length)],
 	                                    description="The encounters in the corridor.", required=True)
-	sprite: str = Field(default=None, description='The sprite for the corridor.', required=False)
+	coords: List[Tuple[int, int]] = Field(default=[], description='The coordinates of the room.', required=True)
+	sprites: List[str] = Field(default=[], description='The sprite for the corridor.', required=False)
 	
 	def __str__(self):
 		s = f'{self.name}: from {self.room_from} to {self.room_to}, {self.length} cells long;'
