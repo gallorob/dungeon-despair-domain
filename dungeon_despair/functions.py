@@ -14,7 +14,7 @@ from dungeon_despair.domain.level import Level
 from dungeon_despair.domain.room import Room
 from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, is_corridor, \
 	derive_rooms_from_corridor_name, make_corridor_name, get_encounter, get_new_coords, check_if_in_loop, \
-	get_connected_rooms, check_intersection_coords, get_rotation, get_rotated_direction
+	check_intersection_coords, get_rotation, get_rotated_direction
 
 
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
@@ -609,10 +609,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
 		assert len(
 			target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
-		assert set(starting_positions) == set[
-			'X', 'O'], f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
-		assert set(target_positions) == set[
-			'X', 'O'], f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+		assert set(starting_positions).issubset({'X', 'O'}), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
+		assert set(target_positions).issubset({'X', 'O'}), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
 		assert enemy_name in [entity.name for entity in encounter.entities[
 			EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
@@ -659,10 +657,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
 		assert len(
 			target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
-		assert set(starting_positions) == set[
-			'X', 'O'], f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
-		assert set(target_positions) == set[
-			'X', 'O'], f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
+		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
 		assert enemy_name in [entity.name for entity in encounter.entities[
 			EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][

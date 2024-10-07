@@ -21,7 +21,6 @@ class Level(BaseModel):
 	
 	current_room: str = Field(default='', description="The currently selected room.", required=True)
 	
-	# TODO: Saving level should export all images, Exporting should only save sprites
 	def save_to_file(self, filename: str, conversation: str) -> None:
 		all_images = os.listdir(config.temp_dir)
 		images = {image_path: PIL.Image.open(os.path.join(config.temp_dir, image_path)) for image_path in all_images}
@@ -54,7 +53,7 @@ class Level(BaseModel):
 				for entity in room.encounter.entities[entity_type]:
 					all_sprites.append(os.path.basename(entity.sprite))
 		for corridor in self.corridors.values():
-			all_sprites.extend(os.path.basename(corridor.sprites))
+			all_sprites.extend([os.path.basename(x) for x in corridor.sprites])
 			for encounter in corridor.encounters:
 				for entity_type in encounter.entities.keys():
 					for entity in encounter.entities[entity_type]:
