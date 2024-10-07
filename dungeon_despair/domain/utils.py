@@ -133,19 +133,3 @@ def check_if_in_loop(corridor: "Corridor",
 		paths = new_paths
 		new_paths = []
 	return False
-
-
-def get_connected_rooms(corridor: "Corridor",
-                        connections: Dict[str, Dict[Direction, str]]) -> List[str]:
-	rooms = []
-	to_expand = [corridor.room_to]
-	while len(to_expand) > 0:
-		for room in to_expand:
-			rooms.append(room)
-			for direction in Direction:
-				connecting_room = connections[room][direction]
-				if connecting_room != '' and connecting_room != corridor.room_from:
-					if connecting_room not in rooms:
-						to_expand.append(connecting_room)
-			to_expand.remove(room)
-	return rooms
