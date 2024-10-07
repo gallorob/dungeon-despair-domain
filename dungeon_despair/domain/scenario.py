@@ -19,6 +19,10 @@ def check_level_playability(level: Level,
 		for room in level.rooms.values():
 			for enemy in room.encounter.entities['enemy']:
 				assert len(enemy.attacks) > 0, f'Enemies must all have at least one attack: {enemy.name} in {room.name} has {len(enemy.attacks)} attacks.'
+		for corridor in level.corridors.values():
+			for encounter in corridor.encounters:
+				for enemy in encounter.entities['enemy']:
+					assert len(enemy.attacks) > 0, f'Enemies must all have at least one attack: {enemy.name} in {room.name} has {len(enemy.attacks)} attacks.'
 		# other checks...?
 		
 	elif condition == ScenarioType.TREAURE_HUNT:

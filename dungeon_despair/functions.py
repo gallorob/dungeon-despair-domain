@@ -464,7 +464,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		cell_index='The corridor cell. Set to -1 when targeting a room, otherwise set to a value between 1 and the length of the corridor.')
 	@LibParam(reference_name='The reference name of the enemy to update')
 	@LibParam(name='The unique updated name of the enemy')
-	@LibParam(description='The unique updated physical characteristics of thr enemy')
+	@LibParam(description='The unique updated physical characteristics of the enemy')
 	@LibParam(species='The updated species of the enemy')
 	@LibParamSpec(name='hp',
 	              description=f'The health points of the enemy, the value must be between {config.min_hp} and {config.max_hp}.')
@@ -481,9 +481,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                            description: str,
 	                            species: str,
 	                            hp: int,
-	                            dodge: int,
+	                            dodge: float,
 	                            prot: float,
-	                            spd: int,
+	                            spd: float,
 	                            cell_index: int) -> str:
 		assert config.min_hp <= hp <= config.max_hp, f'Invalid hp value: {hp}; should be between {config.min_hp} and {config.max_hp}.'
 		assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and {config.max_dodge}.'
