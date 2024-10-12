@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from dungeon_despair.domain.entities.entity import Entity
 from dungeon_despair.domain.utils import EntityEnum

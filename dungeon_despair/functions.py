@@ -22,7 +22,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                  func_name: str,
 	                  func_args: str,
 	                  level: Level) -> str:
-		func_args = json.loads(func_args)
+		if isinstance(func_args, str):
+			func_args = json.loads(func_args)
 		try:
 			operation_result = self.call_by_dict({
 				'name': func_name,
@@ -40,9 +41,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(name='The room name')
 	@LibParam(description='The room physical characteristics')
 	@LibParam(
-		room_from='The room the new room connects from. If unspecified, set it to "" if there is no current room, otherwise set it to the current room.')
+		room_from='The room the new room connects from. If unspecified, set it to \"\" if there is no current room, otherwise set it to the current room.')
 	@LibParam(
-		direction='The direction the new room connects from. If unspecified, set it to "" if there is no current room, otherwise set it to one of the available directions (either "north", "south", "east", or "west").')
+		direction='The direction the new room connects from. If unspecified, set it to \"\" if there is no current room, otherwise set it to one of the available directions (either \"north\", \"south\", \"east\", or \"west\").')
 	def create_room(self, level: Level,
 	                name: str,
 	                description: str,

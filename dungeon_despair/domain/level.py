@@ -3,7 +3,7 @@ import pickle
 from typing import Dict, Tuple, Optional, List
 
 import PIL
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from dungeon_despair.domain.configs import config
 from dungeon_despair.domain.corridor import Corridor
@@ -14,6 +14,7 @@ from dungeon_despair.domain.utils import Direction
 class Level(BaseModel):
 	class Config:
 		arbitrary_types_allowed = True
+		use_enum_values = True
 
 	rooms: Dict[str, Room] = Field(default={}, description="The rooms in the level.", required=True)
 	corridors: Dict[str, Corridor] = Field(default={}, description="The corridors in the level.", required=True)

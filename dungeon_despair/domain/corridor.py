@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from dungeon_despair.domain.configs import config
 from dungeon_despair.domain.encounter import Encounter
@@ -10,6 +10,7 @@ from dungeon_despair.domain.utils import Direction
 class Corridor(BaseModel):
 	class Config:
 		arbitrary_types_allowed = True
+		use_enum_values = True
 	
 	room_from: str = Field(..., description="The room the corridor is connected to.", required=True)
 	room_to: str = Field(..., description="The room the corridor is connects to.", required=True)

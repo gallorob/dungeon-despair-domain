@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic.v1 import Field
+from pydantic import Field
 
 from dungeon_despair.domain.attack import Attack
 from dungeon_despair.domain.entities.entity import Entity

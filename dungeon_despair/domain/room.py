@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from pydantic.v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 from dungeon_despair.domain.encounter import Encounter
 
