@@ -11,7 +11,7 @@ class Enemy(Entity):
 	hp: int = Field(..., description="The enemy HP.", required=True)
 	dodge: float = Field(..., description="The enemy dodge stat.", required=True)
 	prot: float = Field(..., description="The enemy prot stat.", required=True)
-	spd: int = Field(..., description="The enemy spd stat.", required=True)
+	spd: float = Field(..., description="The enemy spd stat.", required=True)
 	attacks: List[Attack] = Field([], description='The enemy attacks', required=True)
 
 	def __str__(self):
