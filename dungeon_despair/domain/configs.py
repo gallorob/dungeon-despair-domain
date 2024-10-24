@@ -9,8 +9,8 @@ class Config(Namespace):
     max_traps_per_encounter: int = 1
     max_treasures_per_encounter: int = 1
 
-    min_hp: int = 1
-    max_hp: int = 20
+    min_hp: int = 1.0
+    max_hp: int = 20.0
     min_dodge: float = 0.1
     max_dodge: float = 1.0
     min_prot: float = 0.0
