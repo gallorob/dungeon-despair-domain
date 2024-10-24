@@ -17,7 +17,7 @@ class Encounter(BaseModel):
     def __str__(self):
         s = ''
         for k in self.entities.keys():
-            s += f'\n\t{str(k).lower()}: {"; ".join(str(self.entities[k]))}'
+            s += f'\n\t{str(k).lower()}: {"; ".join([str(x) for x in self.entities[k]])}'
         return s
 
     def add_entity(self,

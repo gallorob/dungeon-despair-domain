@@ -2,6 +2,7 @@ import copy
 import json
 
 from gptfunctionutil import AILibFunction, GPTFunctionLibrary, LibParam, LibParamSpec
+from gptfunctionutil.errors import ConversionFromError
 
 from dungeon_despair.domain.attack import Attack
 from dungeon_despair.domain.configs import config
@@ -35,6 +36,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			return operation_result
 		except AssertionError as e:
 			return f'Domain validation error: {e}'
+		except TypeError as e:
+			return f'Missing arguments: {e}'
 	
 	@AILibFunction(name='create_room', description='Create a room in the level.',
 	               required=['name', 'description', 'room_from', 'direction'])
@@ -146,13 +149,13 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 				del level.corridors[corridor.name]
 				corridor.room_from = room.name
 				corridor.name = f'{room.name}-{corridor.room_to}'
-				corridor.sprite = [None for _ in range(corridor.length)] if room.description != description else corridor.sprite
+				corridor.sprites = [None for _ in range(corridor.length)] if room.description != description else corridor.sprites
 				level.corridors[corridor.name] = corridor
 			if corridor.room_to == room_reference_name:
 				del level.corridors[corridor.name]
 				corridor.room_to = room.name
 				corridor.name = f'{corridor.room_from}-{room.name}'
-				corridor.sprite = [None for _ in range(corridor.length)] if room.description != description else corridor.sprite
+				corridor.sprites = [None for _ in range(corridor.length)] if room.description != description else corridor.sprites
 				level.corridors[corridor.name] = corridor
 		room.description = description
 		# add room back
@@ -169,12 +172,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		return f'Updated {room_reference_name}.'
 
 	
-	@AILibFunction(name='add_corridor', description='Add a corridor',
+	@AILibFunction(name='add_corridor', description='Add a corridor between two existing rooms.',
 	               required=['room_from_name', 'room_to_name', 'corridor_length'])
 	@LibParam(room_from_name='The starting room name')
 	@LibParam(room_to_name='The connecting room name')
-	@LibParamSpec(name='corridor_length', description='The corridor length', minimum=config.corridor_min_length,
-	              maximum=config.corridor_max_length)
+	@LibParamSpec(name='corridor_length', description=f'The corridor length, must be a value must be between {config.corridor_min_length} and {config.corridor_max_length}.')
 	@LibParam(
 		direction='The direction of the corridor from room_from_name to room_to_name. Must be one of "north", "south", "east", or "west".')
 	def add_corridor(self, level: Level,
@@ -182,6 +184,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                 room_to_name: str,
 	                 corridor_length: int,
 	                 direction: str) -> str:
+		assert room_from_name != '', f'room_from_name cannot be empty.'
+		assert room_to_name != '', f'room_to_name cannot be empty.'
+		assert room_from_name != room_to_name, f'{room_from_name} cannot be the same as {room_to_name}.'
 		assert room_from_name in level.rooms.keys(), f'Room {room_from_name} is not in the level.'
 		assert room_to_name in level.rooms.keys(), f'Room {room_to_name} is not in the level.'
 		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
@@ -249,8 +254,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	               required=['room_from_name', 'room_to_name', 'corridor_length'])
 	@LibParam(room_from_name='The starting room name')
 	@LibParam(room_to_name='The connecting room name')
-	@LibParamSpec(name='corridor_length', description='The corridor length', minimum=config.corridor_min_length,
-	              maximum=config.corridor_max_length)
+	@LibParamSpec(name='corridor_length', description=f'The corridor length. Must be a value between {config.corridor_min_length} and {config.corridor_max_length}')
 	@LibParam(
 		direction='The direction of the corridor from room_from_name to room_to_name. Must be one of "north", "south", "east", or "west".')
 	def update_corridor(self, level: Level,
@@ -384,7 +388,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	              name: str,
 	              description: str,
 	              species: str,
-	              hp: int,
+	              hp: float,
 	              dodge: float,
 	              prot: float,
 	              spd: float,
@@ -400,6 +404,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                                  [])) < config.max_enemies_per_encounter, f'Could not add enemy: there are already {config.max_enemies_per_encounter} enemy(es) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed.'
 		enemy = Enemy(name=name, description=description, species=species, hp=hp, dodge=dodge, prot=prot, spd=spd)
 		encounter.add_entity(EntityEnum.ENEMY, enemy)
+		level.current_room = room_name
 		return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 	
 	
@@ -424,6 +429,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                                      [])) < config.max_treasures_per_encounter, f'Could not add treasure: there is already {config.max_treasures_per_encounter} treasure(s) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed..'
 		treasure = Treasure(name=name, description=description, loot=loot)
 		encounter.add_entity(EntityEnum.TREASURE, treasure)
+		level.current_room = room_name
 		return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 	
 	
@@ -453,6 +459,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                                      [])) < config.max_traps_per_encounter, f'Could not add trap: there is already {config.max_traps_per_encounter} trap(s) in {corridor_name} in cell {cell_index}.'
 		trap = Trap(name=name, description=description, effect=effect)
 		encounter.add_entity(EntityEnum.TRAP, trap)
+		level.current_room = corridor_name
 		return f'Added {name} in {corridor_name} in cell {cell_index}.'
 	
 	
@@ -481,7 +488,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                            name: str,
 	                            description: str,
 	                            species: str,
-	                            hp: int,
+	                            hp: float,
 	                            dodge: float,
 	                            prot: float,
 	                            spd: float,
@@ -498,6 +505,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		updated_enemy = Enemy(name=name, description=description, species=species,
 		                      hp=hp, dodge=dodge, prot=prot, spd=spd)
 		encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
+		level.current_room = room_name
 		return f'Updated {reference_name} properties in {room_name}.'
 	
 	
@@ -525,6 +533,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		updated_treasure = Treasure(name=name, description=description, loot=loot)
 		encounter.replace_entity(reference_name, EntityEnum.TREASURE, updated_treasure)
+		level.current_room = room_name
 		return f'Updated {reference_name} properties in {room_name}.'
 	
 	
@@ -555,6 +564,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
 		updated_trap = Trap(name=name, description=description, effect=effect)
 		encounter.replace_entity(reference_name, EntityEnum.TRAP, updated_trap)
+		level.current_room = corridor_name
 		return f'Updated {reference_name} properties in {corridor_name}.'
 	
 	
@@ -577,6 +587,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert entity_name in [entity.name for entity in encounter.entities[
 			entity_enum.value]], f'{entity_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		encounter.remove_entity_by_name(entity_enum, entity_name)
+		level.current_room = room_name
 		return f'Removed {entity_name} from {room_name}.'
 	
 	
@@ -604,6 +615,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	               starting_positions: str,
 	               target_positions: str,
 	               base_dmg: float) -> str:
+		assert name != '', f'Attack name should be specified.'
+		assert description != '', f'Attack description should be specified.'
+		assert enemy_name != '', f'Enemy name should be specified.'
 		assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
 		encounter = get_encounter(level, room_name, cell_index)
 		assert len(
@@ -621,6 +635,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		attack = Attack(name=name, description=description, starting_positions=starting_positions,
 		                target_positions=target_positions, base_dmg=base_dmg)
 		enemy.attacks.append(attack)
+		level.current_room = room_name
 		return f'Added {name} to {enemy_name}.'
 	
 	
@@ -670,6 +685,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		attack = Attack(name=name, description=description, starting_positions=starting_positions,
 		                target_positions=target_positions, base_dmg=base_dmg)
 		enemy.attacks[idx] = attack
+		level.current_room = room_name
 		return f'Updated {reference_name} of {enemy_name}.'
 	
 	
@@ -691,4 +707,5 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert name in [attack.name for attack in enemy.attacks], f'{name} is not an attack for {enemy_name}.'
 		idx = [attack.name for attack in enemy.attacks].index(name)
 		enemy.attacks.pop(idx)
+		level.current_room = room_name
 		return f'Removed {name} from {enemy_name}.'
