@@ -2,7 +2,6 @@ import copy
 import json
 
 from gptfunctionutil import AILibFunction, GPTFunctionLibrary, LibParam, LibParamSpec
-from gptfunctionutil.errors import ConversionFromError
 
 from dungeon_despair.domain.attack import Attack
 from dungeon_despair.domain.configs import config
@@ -52,6 +51,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                description: str,
 	                room_from: str,
 	                direction: str) -> str:
+		assert name != '', f'Room name should be provided.'
+		assert description != '', f'Room description should be provided.'
 		assert name not in level.rooms.keys(), f'Could not add {name} to the level: {name} already exists.'
 		if level.current_room == '':
 			assert room_from == '', f'Could not add {name} to the level: room_from must not be set if there is no current room.'
@@ -102,6 +103,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	def remove_room(self, level: Level,
 	                name: str) -> str:
 		assert name in level.rooms.keys(), f'Could not remove {name}: {name} is not in the level.'
+		assert name != '', 'Room name should be provided.'
 		# remove room
 		del level.rooms[name]
 		del level.connections[name]
@@ -128,6 +130,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                name: str,
 	                description: str) -> str:
 		assert room_reference_name in level.rooms.keys(), f'Could not update {room_reference_name}: {room_reference_name} is not in the level.'
+		assert room_reference_name != '', 'Parameter room_reference_name should be provided.'
+		assert name != '', 'Room name should be provided.'
+		assert description != '', 'Room description should be provided.'
 		if name != room_reference_name:
 			assert name not in level.rooms.keys(), f'Could not update {room_reference_name}: {name} already exists in the level.'
 		# get the current room
@@ -233,6 +238,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	def remove_corridor(self, level: Level,
 	                    room_from_name: str,
 	                    room_to_name: str) -> str:
+		assert room_from_name != '', f'room_from_name cannot be empty.'
+		assert room_to_name != '', f'room_to_name cannot be empty.'
 		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
 		assert corridor is not None, f'Corridor between {room_from_name} and {room_to_name} does not exist.'
 		# remove the corridor from the level
@@ -262,6 +269,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                    room_to_name: str,
 	                    corridor_length: int,
 	                    direction: str) -> str:
+		assert room_from_name != '', f'room_from_name cannot be empty.'
+		assert room_to_name != '', f'room_to_name cannot be empty.'
 		assert config.corridor_min_length <= corridor_length <= config.corridor_max_length, f'Could not add corridor: corridor_length should be between {config.corridor_min_length} and {config.corridor_max_length}, not {corridor_length}'
 		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
 		assert corridor is not None, f'Corridor between {room_from_name} and {room_to_name} does not exist.'
@@ -393,6 +402,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	              prot: float,
 	              spd: float,
 	              cell_index: int) -> str:
+		assert room_name != '', 'Parameter room_name should be provided.'
+		assert name != '', 'Enemy name should be provided.'
+		assert description != '', 'Enemy description should be provided.'
 		assert config.min_hp <= hp <= config.max_hp, f'Invalid hp value: {hp}; should be between {config.min_hp} and  {config.max_hp}.'
 		assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and  {config.max_dodge}.'
 		assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and  {config.max_prot}.'
@@ -422,6 +434,10 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                 description: str,
 	                 loot: str,
 	                 cell_index: int) -> str:
+		assert room_name != '', 'Parameter room_name should be provided.'
+		assert name != '', 'Treasure name should be provided.'
+		assert description != '', 'Treasure description should be provided.'
+		assert loot != '', 'Treasure loot should be provided.'
 		encounter = get_encounter(level, room_name, cell_index)
 		assert name not in [treasure.name for treasure in encounter.entities[
 			EntityEnum.TREASURE.value]], f'Could not add treasure: {name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
@@ -447,6 +463,10 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	             description: str,
 	             effect: str,
 	             cell_index: int) -> str:
+		assert corridor_name != '', 'Parameter corridor_name should be provided.'
+		assert name != '', 'Trap name should be provided.'
+		assert description != '', 'Trap description should be provided.'
+		assert effect != '', 'Trap effect should be provided.'
 		assert is_corridor(
 			corridor_name), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
 		corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
@@ -493,6 +513,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                            prot: float,
 	                            spd: float,
 	                            cell_index: int) -> str:
+		assert room_name != '', 'Parameter room_name should be provided.'
+		assert reference_name != '', 'Enemy reference name should be provided.'
+		assert name != '', 'Enemy name should be provided.'
+		assert description != '', 'Enemy description should be provided.'
+		assert species != '', 'Enemy species should be provided.'
 		assert config.min_hp <= hp <= config.max_hp, f'Invalid hp value: {hp}; should be between {config.min_hp} and {config.max_hp}.'
 		assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and {config.max_dodge}.'
 		assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and {config.max_prot}.'
@@ -526,6 +551,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                               description: str,
 	                               loot: str,
 	                               cell_index: int) -> str:
+		assert room_name != '', 'Parameter room_name should be provided.'
+		assert reference_name != '', 'Treasure reference name should be provided.'
+		assert name != '', 'Treasure name should be provided.'
+		assert description != '', 'Treasure description should be provided.'
+		assert loot != '', 'Treasure loot should be provided.'
 		encounter = get_encounter(level, room_name, cell_index)
 		assert reference_name in [treasure.name for treasure in encounter.entities[
 			EntityEnum.TREASURE.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
@@ -554,6 +584,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                           description: str,
 	                           effect: str,
 	                           cell_index: int = None) -> str:
+		assert corridor_name != '', 'Parameter corridor_name should be provided.'
+		assert reference_name != '', 'Trap reference name should be provided.'
+		assert name != '', 'Trap name should be provided.'
+		assert description != '', 'Trap description should be provided.'
+		assert effect != '', 'Trap effect should be provided.'
 		corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
 		assert corridor is not None, f'Corridor {corridor_name} does not exist.'
 		assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
@@ -581,6 +616,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                  entity_name: str,
 	                  entity_type: str,
 	                  cell_index: int) -> str:
+		assert room_name != '', 'Parameter room_name should be provided.'
+		assert entity_name != '', 'Entity name should be provided.'
+		assert entity_type != '', 'Entity type should be provided.'
 		entity_enum = get_enum_by_value(EntityEnum, entity_type)
 		assert entity_enum is not None, f'Invalid entity type: {entity_type}.'
 		encounter = get_encounter(level, room_name, cell_index)
@@ -615,6 +653,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	               starting_positions: str,
 	               target_positions: str,
 	               base_dmg: float) -> str:
+		assert room_name != '', f'Parameter room_name should be provided.'
 		assert name != '', f'Attack name should be specified.'
 		assert description != '', f'Attack description should be specified.'
 		assert enemy_name != '', f'Enemy name should be specified.'
@@ -667,6 +706,11 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                  starting_positions: str,
 	                  target_positions: str,
 	                  base_dmg: float) -> str:
+		assert room_name != '', f'Parameter room_name should be provided.'
+		assert reference_name != '', f'Attack reference name should be specified.'
+		assert name != '', f'Attack name should be specified.'
+		assert description != '', f'Attack description should be specified.'
+		assert enemy_name != '', f'Enemy name should be specified.'
 		assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
 		encounter = get_encounter(level, room_name, cell_index)
 		assert len(
@@ -701,6 +745,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                  cell_index: int,
 	                  enemy_name: str,
 	                  name: str) -> str:
+		assert room_name != '', f'Parameter room_name should be provided.'
+		assert name != '', f'Attack name should be specified.'
+		assert enemy_name != '', f'Enemy name should be specified.'
 		encounter = get_encounter(level, room_name, cell_index)
 		enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
 			[entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
