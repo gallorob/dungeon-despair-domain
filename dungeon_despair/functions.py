@@ -288,23 +288,24 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		fixed_rooms = {x.name: copy.deepcopy(x) for x in fixed_rooms}
 		fixed_corridors = {x.name: copy.deepcopy(x) for x in fixed_corridors}
 		# Apply rotations first
-		if dir_enum != corridor.direction:
+		curr_dir_enum = get_enum_by_value(Direction, corridor.direction)
+		if dir_enum != curr_dir_enum:
 			rotated = []
-			rotate_by = get_rotation(from_direction=corridor.direction, to_direction=dir_enum)
+			rotate_by = get_rotation(from_direction=curr_dir_enum, to_direction=dir_enum)
 			for c in changing_corridors.values():
 				if c.name not in rotated:
-					c.direction = get_rotated_direction(direction=c.direction, rotate_by=rotate_by)
+					c.direction = get_rotated_direction(direction=curr_dir_enum, rotate_by=rotate_by)
 					# room_from may be in fixed_rooms
 					if c.room_from in fixed_rooms.keys():
 						from_coords = fixed_rooms[c.room_from].coords
 					else:
 						from_coords = changing_rooms[c.room_from].coords
 					c.coords = [get_new_coords(coords=from_coords,
-					                           direction=c.direction,
+					                           direction=dir_enum,
 					                           n=x) for x in range(1, c.length + 1)]
 					# update the coordinates of the room_to
 					changing_rooms[c.room_to].coords = get_new_coords(coords=c.coords[-1],
-					                                                  direction=c.direction,
+					                                                  direction=dir_enum,
 					                                                  n=1)
 					rotated.append(c.name)
 		# Apply corridor length change
@@ -344,8 +345,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 						f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_corridor.name} intersect with {fixed_corridor.name}')
 		# If everything is fine, update the level (and the connections)
 		# remove old connection
-		level.connections[corridor.room_from][corridor.direction] = ''
-		level.connections[corridor.room_to][opposite_direction[corridor.direction]] = ''
+		level.connections[corridor.room_from][get_enum_by_value(Direction, corridor.direction)] = ''
+		level.connections[corridor.room_to][opposite_direction[get_enum_by_value(Direction, corridor.direction)]] = ''
 		# update rooms
 		for room_name in changing_rooms.keys():
 			level.rooms[room_name] = changing_rooms[room_name]
@@ -354,8 +355,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			level.corridors[corridor_name] = changing_corridors[corridor_name]
 		# update connections
 		for changing_corridor in changing_corridors.values():
-			level.connections[changing_corridor.room_from][changing_corridor.direction] = changing_corridor.room_to
-			level.connections[changing_corridor.room_to][opposite_direction[changing_corridor.direction]] = changing_corridor.room_from
+			level.connections[changing_corridor.room_from][get_enum_by_value(Direction, changing_corridor.direction)] = changing_corridor.room_to
+			level.connections[changing_corridor.room_to][opposite_direction[get_enum_by_value(Direction, changing_corridor.direction)]] = changing_corridor.room_from
 		# Get the updated corridor
 		corridor = level.corridors[corridor.name]
 		# Update encounters and sprites if the length of the corridor has changed
