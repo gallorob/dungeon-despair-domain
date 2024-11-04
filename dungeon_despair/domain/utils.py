@@ -52,24 +52,15 @@ def make_corridor_name(room_from_name: str,
 	return f'{room_from_name}-{room_to_name}'
 
 
-def derive_rooms_from_corridor_name(corridor_name: str) -> List[str]:
-	return corridor_name.split('-')
-
-
-def is_corridor(name: str) -> bool:
-	return len(derive_rooms_from_corridor_name(name)) == 2
-
-
 def get_encounter(level: "Level",
                   room_name: str,
                   cell_index: int) -> "Encounter":
-	if not is_corridor(room_name):
-		room = level.rooms.get(room_name, None)
-		assert room is not None, f'Room {room_name} does not exist.'
+	assert room_name in level.rooms.keys() or room_name in level.corridors.keys(), f'{room_name} is not in the level.'
+	if room_name in level.rooms.keys():
+		room = level.rooms[room_name]
 		return room.encounter
 	else:
-		corridor = level.get_corridor(*derive_rooms_from_corridor_name(room_name), ordered=False)
-		assert corridor is not None, f'Corridor {room_name} does not exist.'
+		corridor = level.corridors[room_name]
 		assert 0 < cell_index <= corridor.length, f'{room_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
 		return corridor.encounters[cell_index - 1]
 

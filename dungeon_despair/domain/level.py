@@ -80,14 +80,6 @@ class Level(BaseModel):
 		level_description += 'Corridors:\n' + '\n'.join([str(self.corridors[k]) for k in self.corridors.keys()]) + '\n'
 		level_description += f'Current room: {self.current_room}'
 		return level_description
-
-	def get_corridor(self, room_from_name, room_to_name, ordered=False) -> Optional[Corridor]:
-		c_name = f'{room_from_name}-{room_to_name}'
-		corridor = self.corridors.get(c_name, None)
-		if corridor is None and not ordered:
-			c_name = f'{room_to_name}-{room_from_name}'
-			corridor = self.corridors.get(c_name, None)
-		return corridor
 	
 	def get_corridors_by_room(self, room_name) -> List[Corridor]:
 		return [corridor for corridor in self.corridors.values() if corridor.room_from == room_name or corridor.room_to == room_name]

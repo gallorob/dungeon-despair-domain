@@ -12,8 +12,8 @@ from dungeon_despair.domain.entities.trap import Trap
 from dungeon_despair.domain.entities.treasure import Treasure
 from dungeon_despair.domain.level import Level
 from dungeon_despair.domain.room import Room
-from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, is_corridor, \
-	derive_rooms_from_corridor_name, make_corridor_name, get_encounter, get_new_coords, check_if_in_loop, \
+from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, \
+	make_corridor_name, get_encounter, get_new_coords, check_if_in_loop, \
 	check_intersection_coords, get_rotation, get_rotated_direction
 
 
@@ -35,6 +35,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			return operation_result
 		except AssertionError as e:
 			return f'Domain validation error: {e}'
+		except AttributeError as e:
+			return f'Function {func_name} not found.'
 		except TypeError as e:
 			return f'Missing arguments: {e}'
 	
@@ -60,8 +62,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			assert room_from != '', f'Could not add {name} to the level: room_from must be set if there exists a current room (current room is {level.current_room}).'
 			assert direction != '', f'Could not add {name} to the level: direction must be set if there exists a current room (current room is {level.current_room}).'
 		if room_from != '':
-			assert not is_corridor(
-				level.current_room), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either {derive_rooms_from_corridor_name(level.current_room)[0]} or {derive_rooms_from_corridor_name(level.current_room)[1]}.'
+			assert level.current_room not in level.corridors.keys(), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either the rooms connected by the corridor {level.current_room}.'
 			assert room_from in level.rooms.keys(), f'{room_from} is not a valid room name.'
 			dir_enum = get_enum_by_value(Direction, direction)
 			assert dir_enum is not None, f'Could not add {name} to the level: {direction} is not a valid direction.'
@@ -468,9 +469,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert name != '', 'Trap name should be provided.'
 		assert description != '', 'Trap description should be provided.'
 		assert effect != '', 'Trap effect should be provided.'
-		assert is_corridor(
-			corridor_name), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
-		corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
+		assert corridor_name in level.corridors.keys(), f'Traps can only be added only to corridors, but {corridor_name} seems to be a room.'
+		corridor = level.corridors[corridor_name]
 		assert corridor is not None, f'Corridor {corridor_name} does not exist.'
 		assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
 		encounter = corridor.encounters[cell_index - 1]
@@ -590,7 +590,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert name != '', 'Trap name should be provided.'
 		assert description != '', 'Trap description should be provided.'
 		assert effect != '', 'Trap effect should be provided.'
-		corridor = level.get_corridor(*derive_rooms_from_corridor_name(corridor_name), ordered=False)
+		corridor = level.corridors[corridor_name]
 		assert corridor is not None, f'Corridor {corridor_name} does not exist.'
 		assert 0 < cell_index <= corridor.length, f'{corridor_name} is a corridor, but cell_index={cell_index} is invalid, it should be a value between 1 and {corridor.length} (inclusive).'
 		encounter = corridor.encounters[cell_index - 1]
