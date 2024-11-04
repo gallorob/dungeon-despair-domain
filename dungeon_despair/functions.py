@@ -14,7 +14,7 @@ from dungeon_despair.domain.level import Level
 from dungeon_despair.domain.room import Room
 from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, \
 	make_corridor_name, get_encounter, get_new_coords, check_if_in_loop, \
-	check_intersection_coords, get_rotation, get_rotated_direction
+	check_intersection_coords, get_rotation, get_rotated_direction, AttackType
 
 
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
@@ -639,41 +639,53 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(enemy_name='The unique name of the enemy.')
 	@LibParam(name='The unique name of the attack.')
 	@LibParam(description='The description of the attack.')
+	@LibParam(attack_type='The attack type: must be one of "damage" or "heal".')
 	@LibParam(
 		starting_positions='A string of 4 characters describing the positions from which the attack can be executed. Use "X" where the attack can be executed from, and "O" otherwise.')
 	@LibParam(
 		target_positions='A string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
 	@LibParamSpec(name='base_dmg',
 	              description=f'The base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
+	@LibParam(accuracy='The attack accuracy (a percentage between 0.0 and 1.0).')
 	def add_attack(self, level: Level,
 	               room_name: str,
 	               cell_index: int,
 	               enemy_name: str,
 	               name: str,
 	               description: str,
+	               attack_type: str,
 	               starting_positions: str,
 	               target_positions: str,
-	               base_dmg: float) -> str:
+	               base_dmg: float,
+	               accuracy: float) -> str:
 		assert room_name != '', f'Parameter room_name should be provided.'
 		assert name != '', f'Attack name should be specified.'
 		assert description != '', f'Attack description should be specified.'
 		assert enemy_name != '', f'Enemy name should be specified.'
-		assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
-		encounter = get_encounter(level, room_name, cell_index)
+		type_enum = get_enum_by_value(AttackType, attack_type)
+		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in AttackType])}.'
+		if type_enum == AttackType.DAMAGE:
+			assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
+		else:  # type is HEAL
+			assert -config.max_base_dmg <= base_dmg <= -config.min_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {-config.max_base_dmg} and {-config.min_base_dmg}.'
+		assert 0.0 <= accuracy <= 1.0, f'Invalid accuracy: must be between 0.0 and 1.0'
 		assert len(
 			starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
 		assert len(
 			target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
 		assert set(starting_positions).issubset({'X', 'O'}), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
 		assert set(target_positions).issubset({'X', 'O'}), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+		encounter = get_encounter(level, room_name, cell_index)
 		assert enemy_name in [entity.name for entity in encounter.entities[
 			EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
 			[entity.name for entity in encounter.entities[EntityEnum.ENEMY.value]].index(enemy_name)]
 		assert len(
 			enemy.attacks) < config.max_num_attacks, f'Enemy {enemy.name} has {config.max_num_attacks}, which is the maximum amount allowed.'
-		attack = Attack(name=name, description=description, starting_positions=starting_positions,
-		                target_positions=target_positions, base_dmg=base_dmg)
+		attack = Attack(name=name, description=description,
+		                type=type_enum,
+		                starting_positions=starting_positions, target_positions=target_positions,
+		                base_dmg=base_dmg, accuracy=accuracy)
 		enemy.attacks.append(attack)
 		level.current_room = room_name
 		return f'Added {name} to {enemy_name}.'
@@ -691,12 +703,14 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(reference_name='The reference name of the attack to update')
 	@LibParam(name='The updated unique name of the attack.')
 	@LibParam(description='The updated description of the attack.')
+	@LibParam(attack_type='The updated attack type: must be one of "damage" or "heal".')
 	@LibParam(
 		starting_positions='The updated string of 4 characters describing the positions from which the attack can be executed. Use "X" where the attack can be executed from, and "O" otherwise.')
 	@LibParam(
 		target_positions='The updated string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
 	@LibParamSpec(name='base_dmg',
 	              description=f'The updated base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
+	@LibParam(accuracy='The updated attack accuracy (a percentage between 0.0 and 1.0).')
 	def update_attack(self, level: Level,
 	                  room_name: str,
 	                  cell_index: int,
@@ -704,22 +718,29 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                  reference_name: str,
 	                  name: str,
 	                  description: str,
+	                  attack_type: str,
 	                  starting_positions: str,
 	                  target_positions: str,
-	                  base_dmg: float) -> str:
+	                  base_dmg: float,
+	                  accuracy: float) -> str:
 		assert room_name != '', f'Parameter room_name should be provided.'
 		assert reference_name != '', f'Attack reference name should be specified.'
 		assert name != '', f'Attack name should be specified.'
 		assert description != '', f'Attack description should be specified.'
 		assert enemy_name != '', f'Enemy name should be specified.'
-		assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
-		encounter = get_encounter(level, room_name, cell_index)
+		type_enum = get_enum_by_value(AttackType, attack_type)
+		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in AttackType])}.'
+		if type_enum == AttackType.DAMAGE:
+			assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
+		else:  # type is HEAL
+			assert -config.max_base_dmg <= base_dmg <= -config.min_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {-config.max_base_dmg} and {-config.min_base_dmg}.'
 		assert len(
 			starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
 		assert len(
 			target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
 		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
 		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+		encounter = get_encounter(level, room_name, cell_index)
 		assert enemy_name in [entity.name for entity in encounter.entities[
 			EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		enemy: Enemy = encounter.entities[EntityEnum.ENEMY.value][
@@ -727,8 +748,10 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert reference_name in [attack.name for attack in
 		                          enemy.attacks], f'{reference_name} is not an attack for {enemy_name}.'
 		idx = [attack.name for attack in enemy.attacks].index(reference_name)
-		attack = Attack(name=name, description=description, starting_positions=starting_positions,
-		                target_positions=target_positions, base_dmg=base_dmg)
+		attack = Attack(name=name, description=description,
+		                type=type_enum,
+		                starting_positions=starting_positions, target_positions=target_positions,
+		                base_dmg=base_dmg, accuracy=accuracy)
 		enemy.attacks[idx] = attack
 		level.current_room = room_name
 		return f'Updated {reference_name} of {enemy_name}.'

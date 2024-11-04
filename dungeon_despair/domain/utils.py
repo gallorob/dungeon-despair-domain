@@ -19,12 +19,6 @@ ordered_directions = [
 ]
 
 
-class EntityEnum(Enum):
-	ENEMY = 'enemy'
-	TRAP = 'trap'
-	TREASURE = 'treasure'
-
-
 opposite_direction: Dict[Direction, Direction] = {
 	Direction.NORTH: Direction.SOUTH,
 	Direction.SOUTH: Direction.NORTH,
@@ -32,11 +26,26 @@ opposite_direction: Dict[Direction, Direction] = {
 	Direction.WEST: Direction.EAST,
 }
 
+
+class EntityEnum(Enum):
+	ENEMY = 'enemy'
+	TRAP = 'trap'
+	TREASURE = 'treasure'
+
+
 entityclass_thresolds: Dict[EntityEnum, int] = {
 	EntityEnum.ENEMY: config.max_enemies_per_encounter,
 	EntityEnum.TRAP: config.max_traps_per_encounter,
 	EntityEnum.TREASURE: config.max_treasures_per_encounter
 }
+
+
+class AttackType(Enum):
+	DAMAGE = 'damage'
+	HEAL = 'heal'
+	# Used only in-game
+	PASS = 'pass'
+	MOVE = 'move'
 
 
 def get_enum_by_value(enum_class,
