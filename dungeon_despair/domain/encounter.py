@@ -2,7 +2,10 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
+from dungeon_despair.domain.entities.enemy import Enemy
 from dungeon_despair.domain.entities.entity import Entity
+from dungeon_despair.domain.entities.trap import Trap
+from dungeon_despair.domain.entities.treasure import Treasure
 from dungeon_despair.domain.utils import EntityEnum
 
 
@@ -40,3 +43,15 @@ class Encounter(BaseModel):
                               entity_name: str) -> None:
         idx = [entity.name for entity in self.entities[entity_type.value]].index(entity_name)
         self.entities[entity_type.value].pop(idx)
+    
+    @property
+    def enemies(self) -> List[Enemy]:
+        return self.entities['enemy']
+    
+    @property
+    def traps(self) -> List[Trap]:
+        return self.entities['trap']
+    
+    @property
+    def treasures(self) -> List[Treasure]:
+        return self.entities['treasure']

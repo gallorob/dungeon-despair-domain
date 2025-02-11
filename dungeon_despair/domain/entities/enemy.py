@@ -4,6 +4,7 @@ from pydantic import Field
 
 from dungeon_despair.domain.attack import Attack
 from dungeon_despair.domain.entities.entity import Entity
+from dungeon_despair.domain.modifier import Modifier
 
 
 class Enemy(Entity):
@@ -13,6 +14,10 @@ class Enemy(Entity):
 	prot: float = Field(..., description="The enemy prot stat.", required=True)
 	spd: float = Field(..., description="The enemy spd stat.", required=True)
 	attacks: List[Attack] = Field([], description='The enemy attacks', required=True)
-
+	
+	modifiers: List[Modifier] = Field([], description="The enemy's modifiers", required=True)
+	
+	max_hp: float = Field(..., description="The enemy max HP")
+	
 	def __str__(self):
 		return f'Enemy {super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'

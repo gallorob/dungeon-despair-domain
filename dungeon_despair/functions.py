@@ -14,7 +14,7 @@ from dungeon_despair.domain.level import Level
 from dungeon_despair.domain.room import Room
 from dungeon_despair.domain.utils import Direction, get_enum_by_value, opposite_direction, EntityEnum, \
 	make_corridor_name, get_encounter, get_new_coords, check_if_in_loop, \
-	check_intersection_coords, get_rotation, get_rotated_direction, AttackType
+	check_intersection_coords, get_rotation, get_rotated_direction, ActionType
 
 
 class DungeonCrawlerFunctions(GPTFunctionLibrary):
@@ -109,8 +109,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		del level.rooms[name]
 		del level.connections[name]
 		# remove connections to deleted room
-		to_remove = level.get_corridors_by_room(name)
-		for corridor in to_remove:
+		for corridor in level.get_corridors_by_room(name):
 			del level.corridors[corridor.name]
 			# remove connections in "to" rooms
 			for direction in Direction:
@@ -118,7 +117,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 					level.connections[corridor.room_to][direction] = ''
 					break
 		level.current_room = list(level.rooms.keys())[0] if len(level.rooms) > 0 else ''
-		# TODO: Should remove "hanging" rooms as well
+		# Remove "hanging" rooms as well
+		level.remove_hanging_rooms()
 		return f'{name} has been removed from the dungeon.'
 	
 	@AILibFunction(name='update_room', description='Update the room',
@@ -195,7 +195,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert room_from_name != room_to_name, f'{room_from_name} cannot be the same as {room_to_name}.'
 		assert room_from_name in level.rooms.keys(), f'Room {room_from_name} is not in the level.'
 		assert room_to_name in level.rooms.keys(), f'Room {room_to_name} is not in the level.'
-		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
+		corridor = level.corridors.get(make_corridor_name(room_from_name, room_to_name), level.corridors.get(make_corridor_name(room_to_name, room_from_name), None))
 		assert corridor is None, f'Could not add corridor: a corridor between {room_from_name} and {room_to_name} already exists.'
 		assert config.corridor_min_length <= corridor_length <= config.corridor_max_length, f'Could not add corridor: corridor_length should be between {config.corridor_min_length} and {config.corridor_max_length}, not {corridor_length}'
 		dir_enum = get_enum_by_value(Direction, direction)
@@ -241,7 +241,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	                    room_to_name: str) -> str:
 		assert room_from_name != '', f'room_from_name cannot be empty.'
 		assert room_to_name != '', f'room_to_name cannot be empty.'
-		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
+		corridor = level.corridors.get(make_corridor_name(room_from_name, room_to_name), level.corridors.get(make_corridor_name(room_to_name, room_from_name), None))
 		assert corridor is not None, f'Corridor between {room_from_name} and {room_to_name} does not exist.'
 		# remove the corridor from the level
 		del level.corridors[corridor.name]
@@ -254,7 +254,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		# update the current room if necessary
 		if level.current_room == corridor.name:
 			level.current_room = corridor.room_from
-		# TODO: Should remove "hanging" rooms as well
+		# Remove "hanging" rooms as well
+		level.remove_hanging_rooms()
 		return f'Removed corridor between {room_from_name} and {room_to_name}.'
 	
 	
@@ -263,8 +264,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(room_from_name='The starting room name')
 	@LibParam(room_to_name='The connecting room name')
 	@LibParamSpec(name='corridor_length', description=f'The corridor length. Must be a value between {config.corridor_min_length} and {config.corridor_max_length}')
-	@LibParam(
-		direction='The direction of the corridor from room_from_name to room_to_name. Must be one of "north", "south", "east", or "west".')
+	@LibParam(direction='The direction of the corridor from room_from_name to room_to_name. Must be one of "north", "south", "east", or "west".')
 	def update_corridor(self, level: Level,
 	                    room_from_name: str,
 	                    room_to_name: str,
@@ -273,7 +273,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert room_from_name != '', f'room_from_name cannot be empty.'
 		assert room_to_name != '', f'room_to_name cannot be empty.'
 		assert config.corridor_min_length <= corridor_length <= config.corridor_max_length, f'Could not add corridor: corridor_length should be between {config.corridor_min_length} and {config.corridor_max_length}, not {corridor_length}'
-		corridor = level.get_corridor(room_from_name, room_to_name, ordered=False)
+		corridor = level.corridors.get(make_corridor_name(room_from_name, room_to_name), level.corridors.get(make_corridor_name(room_to_name, room_from_name), None))
 		assert corridor is not None, f'Corridor between {room_from_name} and {room_to_name} does not exist.'
 		dir_enum = get_enum_by_value(Direction, direction)
 		assert dir_enum is not None, f'Could not update corridor between {room_from_name} and {room_to_name}: {direction} is not a valid direction.'
@@ -662,9 +662,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert name != '', f'Attack name should be specified.'
 		assert description != '', f'Attack description should be specified.'
 		assert enemy_name != '', f'Enemy name should be specified.'
-		type_enum = get_enum_by_value(AttackType, attack_type)
-		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in AttackType])}.'
-		if type_enum == AttackType.DAMAGE:
+		type_enum = get_enum_by_value(ActionType, attack_type)
+		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in ActionType])}.'
+		if type_enum == ActionType.DAMAGE:
 			assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
 		else:  # type is HEAL
 			assert -config.max_base_dmg <= base_dmg <= -config.min_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {-config.max_base_dmg} and {-config.min_base_dmg}.'
@@ -728,9 +728,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert name != '', f'Attack name should be specified.'
 		assert description != '', f'Attack description should be specified.'
 		assert enemy_name != '', f'Enemy name should be specified.'
-		type_enum = get_enum_by_value(AttackType, attack_type)
-		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in AttackType])}.'
-		if type_enum == AttackType.DAMAGE:
+		type_enum = get_enum_by_value(ActionType, attack_type)
+		assert type_enum is not None, f'Attack type "{attack_type}" is not a valid type: it must be one of {", ".join([t.value for t in ActionType])}.'
+		if type_enum == ActionType.DAMAGE:
 			assert config.min_base_dmg <= base_dmg <= config.max_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {config.min_base_dmg} and {config.max_base_dmg}.'
 		else:  # type is HEAL
 			assert -config.max_base_dmg <= base_dmg <= -config.min_base_dmg, f'Invalid base_dmg value: {base_dmg}; should be between {-config.max_base_dmg} and {-config.min_base_dmg}.'
@@ -738,8 +738,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			starting_positions) == 4, f'Invalid starting_positions value: {starting_positions}. Must be 4 characters long.'
 		assert len(
 			target_positions) == 4, f'Invalid target_positions value: {target_positions}. Must be 4 characters long.'
-		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
-		assert set(starting_positions).issubset(set['X', 'O']), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
+		assert set(starting_positions).issubset(set(['X', 'O'])), f'Invalid starting_positions value: {starting_positions}. Must contain only "X" and "O" characters.'
+		assert set(starting_positions).issubset(set(['X', 'O'])), f'Invalid target_positions value: {target_positions}. Must contain only "X" and "O" characters.'
 		encounter = get_encounter(level, room_name, cell_index)
 		assert enemy_name in [entity.name for entity in encounter.entities[
 			EntityEnum.ENEMY.value]], f'{enemy_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'

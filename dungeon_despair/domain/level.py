@@ -107,3 +107,21 @@ class Level(BaseModel):
 							to_expand.append(self.corridors[area].room_to)
 				to_expand.remove(area)
 		return rooms, corridors
+	
+	def remove_hanging_rooms(self) -> None:
+		connected_rooms = [self.current_room]
+		has_more = True
+		while has_more:
+			has_more = False
+			for room in connected_rooms:
+				for other_room in self.connections[room].values():
+					if other_room not in connected_rooms:
+						connected_rooms.append(other_room)
+						has_more = True
+		all_rooms = list(self.rooms.keys())
+		hanging_rooms = list(set(all_rooms).difference(set(connected_rooms)))
+		for room in hanging_rooms:
+			del self.rooms[room]
+			del self.connections[room]
+			for corridor in self.get_corridors_by_room(room):
+				del self.corridors[corridor.name]

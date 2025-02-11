@@ -40,12 +40,19 @@ entityclass_thresolds: Dict[EntityEnum, int] = {
 }
 
 
-class AttackType(Enum):
+class ActionType(Enum):
 	DAMAGE = 'damage'
 	HEAL = 'heal'
 	# Used only in-game
 	PASS = 'pass'
 	MOVE = 'move'
+
+
+class ModifierType(Enum):
+	BLEED = 'bleed'
+	HEAL = 'heal'
+	STUN = 'stun'
+	SCARE = 'scare'
 
 
 def get_enum_by_value(enum_class,
