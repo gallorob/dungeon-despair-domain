@@ -20,7 +20,7 @@ class Modifier(BaseModel):
 		elif type_enum == ModifierType.BLEED:
 			return f'Bleed for {self.turns} turns (-{self.amount}HP/turn).'
 		elif type_enum == ModifierType.SCARE:
-			return f'Scare for {self.turns} (-{self.amount:.0%} stress resist)'
+			return f'Scare for {self.turns} turns (-{self.amount:.0%} stress resist)'
 		elif type_enum == ModifierType.HEAL:
 			return f'Heal for {self.turns} turns (+{self.amount}HP/turn).)'
 		else:
