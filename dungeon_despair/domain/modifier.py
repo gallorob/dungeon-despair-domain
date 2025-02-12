@@ -9,7 +9,7 @@ class Modifier(BaseModel):
 		use_enum_values = True
 	
 	type: ModifierType = Field(..., description=f"The modifier type: must be one of {', '.join([x.value for x in ModifierType])}.", required=True)
-	chance: float = Field(..., description="The chance that this modifier is applied to the target.")
+	chance: float = Field(..., description="The chance that this modifier is applied to the target.", requred=True)
 	turns: int = Field(-1, description="The number of turns this modifier is applied for.", requred=True)
 	amount: float = Field(0.0, description="The amount this modifier applies.", requred=True)
 	

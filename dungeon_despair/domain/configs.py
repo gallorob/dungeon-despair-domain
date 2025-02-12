@@ -11,10 +11,10 @@ class Config(Namespace):
 
     min_hp: int = 1.0
     max_hp: int = 20.0
-    min_dodge: float = 0.1
-    max_dodge: float = 1.0
-    min_prot: float = 0.0
-    max_prot: float = 1.0
+    min_dodge: float = 0.01
+    max_dodge: float = 0.99
+    min_prot: float = 0.01
+    max_prot: float = 0.99
     min_spd: float = 0.1
     max_spd: float = 1.0
 
