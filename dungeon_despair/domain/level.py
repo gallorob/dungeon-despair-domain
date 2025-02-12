@@ -22,13 +22,13 @@ class Level(BaseModel):
 	
 	current_room: str = Field(default='', description="The currently selected room.", required=True)
 	
-	def save_to_file(self, filename: str, conversation: str) -> None:
+	def save_to_file(self, filename: str, conversation: List[str]) -> None:
 		all_images = os.listdir(config.temp_dir)
 		images = {image_path: PIL.Image.open(os.path.join(config.temp_dir, image_path)) for image_path in all_images}
 		bin_data = {
 			'level': self,
 			'images': images,
-			'conversation': conversation
+			'conversation': '\n\n\n'.join(conversation)
 		}
 		with open(filename, 'wb') as f:
 			pickle.dump(bin_data, f)
