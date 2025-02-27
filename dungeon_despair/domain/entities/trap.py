@@ -11,4 +11,4 @@ class Trap(Entity):
 	modifier: Modifier = Field(None, description="The modifier the trap could apply to the hero once triggered", required=False)
 	
 	def __str__(self):
-		return f'Trap {super().__str__()} Effect={self.effect} Chance={self.chance} DMG={self.dmg} Modifier={self.modifier}'
+		return f'{super().__str__()} Effect={self.effect} Chance={self.chance} DMG={self.dmg} Modifier={self.modifier}'

@@ -11,4 +11,4 @@ class Treasure(Entity):
 	modifier: Modifier = Field(None, description="The modifier the treasure could apply to the hero if the internal trap is triggered", required=False)
 	
 	def __str__(self):
-		return f'Treasure {super().__str__()} Loot={self.loot} Trapped Chance={self.trapped_chance} DMG={self.dmg} Modifier={str(self.modifier)}'
+		return f'{super().__str__()} Loot={self.loot} Trapped Chance={self.trapped_chance} DMG={self.dmg} Modifier={str(self.modifier)}'

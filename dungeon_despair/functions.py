@@ -788,7 +788,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                type=type_enum,
 		                starting_positions=starting_positions, target_positions=target_positions,
 		                base_dmg=base_dmg, accuracy=accuracy)
-		if modifier_type != 'None':
+		if modifier_type != '':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add attack: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'

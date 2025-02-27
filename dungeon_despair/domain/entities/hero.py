@@ -24,4 +24,4 @@ class Hero(Entity):
 	max_hp: float = Field(-1, description="The hero max HP")
 	
 	def __str__(self):
-		return f'Hero {super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
+		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'

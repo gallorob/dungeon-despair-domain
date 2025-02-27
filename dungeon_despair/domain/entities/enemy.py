@@ -18,4 +18,4 @@ class Enemy(Entity):
 	modifiers: List[Modifier] = Field([], description="The enemy's modifiers", required=True)
 	
 	def __str__(self):
-		return f'Enemy {super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
+		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
