@@ -156,13 +156,13 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 				del level.corridors[corridor.name]
 				corridor.room_from = room.name
 				corridor.name = f'{room.name}-{corridor.room_to}'
-				corridor.sprites = [None for _ in range(corridor.length)] if room.description != description else corridor.sprites
+				corridor.sprites = [] if room.description != description else corridor.sprites
 				level.corridors[corridor.name] = corridor
 			if corridor.room_to == room_reference_name:
 				del level.corridors[corridor.name]
 				corridor.room_to = room.name
 				corridor.name = f'{corridor.room_from}-{room.name}'
-				corridor.sprites = [None for _ in range(corridor.length)] if room.description != description else corridor.sprites
+				corridor.sprites = [] if room.description != description else corridor.sprites
 				level.corridors[corridor.name] = corridor
 		room.description = description
 		# add room back
@@ -428,7 +428,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(loot='The description of the loot in the treasure')
 	@LibParam(trapped_chance='The chance that this treasure\'s trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The damage this treasure deals if the internal trap is triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The type of modifier this treasure applies when triggered. Set to "None" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The type of modifier this treasure applies when triggered. Set to "no-modifier" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -461,7 +461,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                                      [])) < config.max_treasures_per_encounter, f'Could not add treasure: there is already {config.max_treasures_per_encounter} treasure(s) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed.'
 		assert 0.0 <= trapped_chance <= 1.0, f'trapped_chance must be a value between 0.0 and 1.0; you passed {trapped_chance}.'
 		treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg)
-		if modifier_type != 'None':
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add treasure: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
@@ -485,7 +485,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(effect='The effect of the trap')
 	@LibParam(chance='The chance this trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The damage this trap deals when triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The type of modifier this trap applies when triggered. Set to "None" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The type of modifier this trap applies when triggered. Set to "no-modifier" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -521,7 +521,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert 0 <= len(encounter.entities.get(EntityEnum.TRAP.value, [])) < config.max_traps_per_encounter, f'Could not add trap: there is already {config.max_traps_per_encounter} trap(s) in {corridor_name} in cell {cell_index}.'
 		assert 0.0 <= chance <= 1.0, f'chance must be a value between 0.0 and 1.0; you passed {chance}.'
 		trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg)
-		if modifier_type != 'None':
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add trap: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
@@ -591,7 +591,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(loot='The updated loot description of the treasure')
 	@LibParam(trapped_chance='The updated chance that this treasure\'s trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The updated damage this treasure deals if the internal trap is triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The updated type of modifier this treasure applies when triggered. Set to "None" to remove the modifier, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The updated type of modifier this treasure applies when triggered. Set to "no-modifier" to remove the modifier, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The updated chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The updated number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The updated amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -625,7 +625,8 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert (reference_name == name) or (name not in [treasure.name for treasure in encounter.entities[
 			EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		assert 0.0 <= trapped_chance <= 1.0, f'trapped_chance must be a value between 0.0 and 1.0; you passed {trapped_chance}.'
-		if modifier_type != 'None':
+		updated_treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg)
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not update treasure: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
@@ -634,7 +635,6 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			elif modifier_type == ModifierType.SCARE.value:
 				assert 0.0 <= modifier_amount <= 1.0, f'Invalid modifier_amount value: {modifier_amount}; should be between 0.0 and 1.0.'
 			updated_treasure.modifier = Modifier(type=modifier_type, chance=modifier_chance, turns=modifier_turns, amount=modifier_amount)
-		updated_treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg)
 		encounter.replace_entity(reference_name, EntityEnum.TREASURE, updated_treasure)
 		level.current_room = room_name
 		return f'Updated {reference_name} properties in {room_name}.'
@@ -652,7 +652,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(effect='The updated effects descriptions of the trap')
 	@LibParam(chance='The chance this trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The damage this trap deals when triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The updated type of modifier this trap applies when triggered. Set to "None" to remove the modifier, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The updated type of modifier this trap applies when triggered. Set to "no-modifier" to remove the modifier, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -690,7 +690,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
 		assert 0.0 <= chance <= 1.0, f'chance must be a value between 0.0 and 1.0; you passed {chance}.'
 		updated_trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg)
-		if modifier_type != 'None':
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not update trap: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
@@ -742,7 +742,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(target_positions='A string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
 	@LibParam(base_dmg=f'The base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
 	@LibParam(accuracy='The attack accuracy (a percentage between 0.0 and 1.0).')
-	@LibParam(modifier_type=f'The type of modifier this attack applies when triggered. Set to "None" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The type of modifier this attack applies when triggered. Set to "no-modifier" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -788,7 +788,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                type=type_enum,
 		                starting_positions=starting_positions, target_positions=target_positions,
 		                base_dmg=base_dmg, accuracy=accuracy)
-		if modifier_type != '':
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add attack: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
@@ -816,7 +816,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(target_positions='The updated string of 4 characters describing the positions that the attack strikes to. Use "X" where the attack strikes to, and "O" otherwise.')
 	@LibParam(base_dmg=f'The updated base damage of the attack. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
 	@LibParam(accuracy='The updated attack accuracy (a percentage between 0.0 and 1.0).')
-	@LibParam(modifier_type=f'The updated type of modifier this attack applies when triggered. Set to "None" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The updated type of modifier this attack applies when triggered. Set to "no-modifier" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The updated chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The updated number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The updated amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
@@ -864,7 +864,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		                type=type_enum,
 		                starting_positions=starting_positions, target_positions=target_positions,
 		                base_dmg=base_dmg, accuracy=accuracy)
-		if modifier_type != 'None':
+		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add attack: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
 			assert modifier_turns >= 0, f'modifier_turns must be a positive value; you passed {modifier_turns}.'
