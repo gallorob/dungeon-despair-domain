@@ -20,7 +20,7 @@ class Corridor(BaseModel):
 	length: int = Field(default=config.corridor_min_length, description="The length of the corridor", required=True)
 	encounters: List[Encounter] = Field(default=[Encounter() for _ in range(config.corridor_min_length)],
 	                                    description="The encounters in the corridor.", required=True)
-	coords: List[Tuple[int, int]] = Field(default=[], description='The coordinates of the room.', required=True)
+	coords: List[Tuple[int, int]] = Field(default=[], description='The coordinates of the corridor, one for each cell.', required=True)
 	sprites: List[str] = Field(default=[], description='The sprite for the corridor.', required=False)
 	
 	def __str__(self):

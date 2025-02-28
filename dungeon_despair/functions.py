@@ -178,7 +178,6 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			level.current_room = name
 		return f'Updated {room_reference_name}.'
 
-	
 	@AILibFunction(name='add_corridor', description='Add a corridor between two existing rooms.',
 	               required=['room_from_name', 'room_to_name', 'corridor_length'])
 	@LibParam(room_from_name='The starting room name')
@@ -261,7 +260,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	
 	
 	@AILibFunction(name='update_corridor', description='Update a corridor',
-	               required=['room_from_name', 'room_to_name', 'corridor_length'])
+	               required=['room_from_name', 'room_to_name', 'corridor_length', 'direction'])
 	@LibParam(room_from_name='The starting room name')
 	@LibParam(room_to_name='The connecting room name')
 	@LibParamSpec(name='corridor_length', description=f'The corridor length. Must be a value between {config.corridor_min_length} and {config.corridor_max_length}')
