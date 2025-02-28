@@ -569,12 +569,12 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and {config.max_prot}.'
 		assert config.min_spd <= spd <= config.max_spd, f'Invalid spd value: {spd}; should be between {config.min_spd} and {config.max_spd}.'
 		encounter = get_encounter(level, room_name, cell_index)
-		assert reference_name in [enemy.name for enemy in encounter.entities[
-			EntityEnum.ENEMY.value]], f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
-		assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.entities[
-			EntityEnum.ENEMY.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+		ref_enemy = encounter.get_entity_by_name(EntityEnum.ENEMY, reference_name)
+		assert ref_enemy is not None, f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
+		assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.enemies]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		updated_enemy = Enemy(name=name, description=description, species=species,
 		                      hp=hp, dodge=dodge, prot=prot, spd=spd, max_hp=hp)
+		updated_enemy.attacks = ref_enemy.attacks
 		encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
 		level.current_room = room_name
 		return f'Updated {reference_name} properties in {room_name}.'

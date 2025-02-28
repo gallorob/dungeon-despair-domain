@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,6 +44,15 @@ class Encounter(BaseModel):
         idx = [entity.name for entity in self.entities[entity_type.value]].index(entity_name)
         self.entities[entity_type.value].pop(idx)
     
+    def get_entity_by_name(self,
+                           entity_type: EntityEnum,
+                           entity_name: str) -> Optional[Entity]:
+        names = [entity.name for entity in self.entities[entity_type.value]]
+        if entity_name in names:
+            idx = names.index(entity_name)
+            return self.entities[entity_type.value][idx]
+        return None
+
     @property
     def enemies(self) -> List[Enemy]:
         return self.entities['enemy']
