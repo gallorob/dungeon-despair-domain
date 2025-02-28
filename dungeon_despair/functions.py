@@ -67,8 +67,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			assert room_from in level.rooms.keys(), f'{room_from} is not a valid room name.'
 			dir_enum = get_enum_by_value(Direction, direction)
 			assert dir_enum is not None, f'Could not add {name} to the level: {direction} is not a valid direction.'
-			assert level.connections[room_from][
-				       dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
+			assert level.connections[room_from][dir_enum] == '', f'Could not add {name} to the level: {direction} of {room_from} there already exists a room ({level.connections[room_from][dir_enum]}).'
 			# try add corridor to connecting room
 			n = len(level.get_corridors_by_room(name)) // 2
 			# can only add corridor if the connecting room has at most 3 corridors already
@@ -260,121 +259,204 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	
 	
 	@AILibFunction(name='update_corridor', description='Update a corridor',
-	               required=['room_from_name', 'room_to_name', 'corridor_length', 'direction'])
-	@LibParam(room_from_name='The starting room name')
-	@LibParam(room_to_name='The connecting room name')
+	               required=['room_from_reference_name', 'room_to_reference_name', 'room_from_name', 'room_to_name', 'corridor_length', 'direction'])
+	@LibParam(room_from_reference_name='The starting room name')
+	@LibParam(room_to_reference_name='The connecting room name')
+	@LibParam(room_from_name='The updated starting room name')
+	@LibParam(room_to_name='The updated connecting room name')
 	@LibParamSpec(name='corridor_length', description=f'The corridor length. Must be a value between {config.corridor_min_length} and {config.corridor_max_length}')
 	@LibParam(direction='The direction of the corridor from room_from_name to room_to_name. Must be one of "north", "south", "east", or "west".')
 	def update_corridor(self, level: Level,
-	                    room_from_name: str,
-	                    room_to_name: str,
+	                    room_from_reference_name: str,
+	                    room_to_reference_name: str,
+						room_from_name: str,
+						room_to_name: str,
 	                    corridor_length: int,
 	                    direction: str) -> str:
+		assert room_from_reference_name != '', f'room_from_reference_name cannot be empty.'
+		assert room_to_reference_name != '', f'room_to_reference_name cannot be empty.'
 		assert room_from_name != '', f'room_from_name cannot be empty.'
 		assert room_to_name != '', f'room_to_name cannot be empty.'
 		assert config.corridor_min_length <= corridor_length <= config.corridor_max_length, f'Could not add corridor: corridor_length should be between {config.corridor_min_length} and {config.corridor_max_length}, not {corridor_length}'
-		corridor = level.corridors.get(make_corridor_name(room_from_name, room_to_name), level.corridors.get(make_corridor_name(room_to_name, room_from_name), None))
-		assert corridor is not None, f'Corridor between {room_from_name} and {room_to_name} does not exist.'
+		
+		ref_corridor = level.corridors.get(make_corridor_name(room_from_reference_name, room_to_reference_name), level.corridors.get(make_corridor_name(room_to_reference_name, room_from_reference_name), None))
+		assert ref_corridor is not None, f'Corridor between {room_from_reference_name} and {room_to_reference_name} does not exist.'
+		
 		dir_enum = get_enum_by_value(Direction, direction)
-		assert dir_enum is not None, f'Could not update corridor between {room_from_name} and {room_to_name}: {direction} is not a valid direction.'
+		assert dir_enum is not None, f'Could not update corridor between {room_from_reference_name} and {room_to_reference_name}: {direction} is not a valid direction.'
+
 		# corridors cannot be changed if in a loop
-		assert not check_if_in_loop(corridor=corridor,
+		assert not check_if_in_loop(corridor=ref_corridor,
 		                            connections=level.connections), 'Could not update corridor: corridors in a closed loop cannot be altered.'
-		# Make a copy of parts of the level that would change and that would be fixed
-		changing_rooms, changing_corridors = level.get_level_subset(corridor=corridor, opposite_direction=False)
-		fixed_rooms, fixed_corridors = level.get_level_subset(corridor=corridor, opposite_direction=True)
-		changing_corridors.insert(0, corridor)  # first element since changes are cascaded
-		changing_rooms = {x.name: copy.deepcopy(x) for x in changing_rooms}
-		changing_corridors = {x.name: copy.deepcopy(x) for x in changing_corridors}
-		fixed_rooms = {x.name: copy.deepcopy(x) for x in fixed_rooms}
-		fixed_corridors = {x.name: copy.deepcopy(x) for x in fixed_corridors}
-		# Apply rotations first
-		curr_dir_enum = get_enum_by_value(Direction, corridor.direction)
-		if dir_enum != curr_dir_enum:
-			rotated = []
-			rotate_by = get_rotation(from_direction=curr_dir_enum, to_direction=dir_enum)
-			for c in changing_corridors.values():
-				if c.name not in rotated:
-					c.direction = get_rotated_direction(direction=curr_dir_enum, rotate_by=rotate_by)
-					# room_from may be in fixed_rooms
-					if c.room_from in fixed_rooms.keys():
-						from_coords = fixed_rooms[c.room_from].coords
-					else:
-						from_coords = changing_rooms[c.room_from].coords
-					c.coords = [get_new_coords(coords=from_coords,
-					                           direction=dir_enum,
-					                           n=x) for x in range(1, c.length + 1)]
-					# update the coordinates of the room_to
-					changing_rooms[c.room_to].coords = get_new_coords(coords=c.coords[-1],
-					                                                  direction=dir_enum,
-					                                                  n=1)
-					rotated.append(c.name)
-		# Apply corridor length change
-		if corridor_length != corridor.length:
-			updated = []
-			changing_corridors[corridor.name].length = corridor_length
-			for c in changing_corridors.values():
-				if c.name not in updated:
-					if c.room_from in fixed_rooms.keys():
-						from_coords = fixed_rooms[c.room_from].coords
-					else:
-						from_coords = changing_rooms[c.room_from].coords
-					c.coords = [get_new_coords(coords=from_coords,
-					                           direction=c.direction,
-					                           n=x) for x in range(1, c.length + 1)]
-					changing_rooms[c.room_to].coords = get_new_coords(coords=c.coords[-1],
-					                                                  direction=c.direction,
-					                                                  n=1)
-					updated.append(c.name)
-		# Check for intersections with the fixed part of the level
-		for changing_room in changing_rooms.values():
-			for fixed_room in fixed_rooms.values():
-				if changing_room.coords == fixed_room.coords:
-					raise AssertionError(f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_room.name} intersect with {fixed_room.name}')
-			for fixed_corridor in fixed_corridors.values():
-				if changing_room.coords in fixed_corridor.coords:
-					raise AssertionError(
-						f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_room.name} intersect with {fixed_corridor.name}')
-		for changing_corridor in changing_corridors.values():
-			for fixed_room in fixed_rooms.values():
-				if fixed_room.coords in changing_corridor.coords:
-					raise AssertionError(
-						f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_corridor.name} intersect with {fixed_room.name}')
-			for fixed_corridor in fixed_corridors.values():
-				if len(set(changing_corridor.coords).difference(fixed_corridor.coords)) > 0:
-					raise AssertionError(
-						f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_corridor.name} intersect with {fixed_corridor.name}')
-		# If everything is fine, update the level (and the connections)
-		# remove old connection
-		level.connections[corridor.room_from][get_enum_by_value(Direction, corridor.direction)] = ''
-		level.connections[corridor.room_to][opposite_direction[get_enum_by_value(Direction, corridor.direction)]] = ''
-		# update rooms
-		for room_name in changing_rooms.keys():
-			level.rooms[room_name] = changing_rooms[room_name]
-		# update corridors
-		for corridor_name in changing_corridors.keys():
-			level.corridors[corridor_name] = changing_corridors[corridor_name]
-		# update connections
-		for changing_corridor in changing_corridors.values():
-			level.connections[changing_corridor.room_from][get_enum_by_value(Direction, changing_corridor.direction)] = changing_corridor.room_to
-			level.connections[changing_corridor.room_to][opposite_direction[get_enum_by_value(Direction, changing_corridor.direction)]] = changing_corridor.room_from
-		# Get the updated corridor
-		corridor = level.corridors[corridor.name]
-		# Update encounters and sprites if the length of the corridor has changed
-		if len(corridor.encounters) != corridor.length:
-			if len(corridor.encounters) > corridor.length:
-				# Drop extra encounters
-				corridor.encounters = corridor.encounters[:corridor.length]
-				# Drop extra sprites
-				last_sprite = corridor.sprites[-1]  # Last sprite is kept
-				corridor.sprites = corridor.sprites[0:corridor.length + 1] + [last_sprite]
-			else:
-				while len(corridor.encounters) < corridor.length:
-					# Add new, empty encounters
-					corridor.encounters.append(Encounter())
-					# Add empty sprite
-					corridor.sprites.insert(-2, None)
-		level.current_room = corridor.name
+
+		# check a new corridor can be created if we're changing where it's connected to
+		if room_from_reference_name != room_from_name:
+			assert level.connections[room_from_name][dir_enum] == '', f'Could not update corridor between {room_from_reference_name} and {room_to_reference_name}: {room_from_name} already has a corridor on {dir_enum.value}.'
+		if room_to_reference_name != room_to_name:
+			assert level.connections[room_to_name][opposite_direction[dir_enum]] == '', f'Could not update corridor between {room_from_reference_name} and {room_to_reference_name}: {room_to_name} already has a corridor on {opposite_direction[dir_enum].value}.'
+		# make a copy of the level
+		level_copy = copy.deepcopy(level)
+		# remove the old corridor
+		level_copy.corridors.pop(ref_corridor.name)
+		level_copy.connections[room_from_reference_name][get_enum_by_value(Direction, ref_corridor.direction)] = ''
+		level_copy.connections[room_to_reference_name][opposite_direction[get_enum_by_value(Direction, ref_corridor.direction)]] = ''
+		# create the new corridor
+		new_corridor = Corridor(room_from=room_from_name, room_to=room_to_name,
+		                        name=make_corridor_name(room_from_name, room_to_name),
+		                        length=corridor_length,
+		                        encounters=[Encounter() for _ in range(corridor_length)],  # TODO: get encounters from ref_corridor
+		                        direction=dir_enum,
+		                        coords=[get_new_coords(coords=level_copy.rooms[room_from_name].coords,
+												 	   direction=dir_enum,
+													   n=x) for x in range(1, corridor_length + 1)])
+		# TODO: add sprites from ref_corridor as well
+		# ... unless we're changing either room from or to
+		new_corridor.sprites = [None for _ in range(new_corridor.length)]
+		# Add new corridor to the level copy
+		level_copy.corridors[new_corridor.name] = new_corridor
+		level_copy.connections[room_from_name][dir_enum] = room_to_name
+		level_copy.connections[room_to_name][opposite_direction[dir_enum]] = room_from_name
+
+		# Remove "hanging" rooms
+		level_copy.remove_hanging_rooms(ref_room=room_from_name)
+		# Update all coordinates--we assume room_from is "fixed"
+		updating_rooms = [new_corridor.room_to]
+		while len(updating_rooms) > 0:
+			for room_name in updating_rooms:
+				room = level_copy.rooms[room_name]
+				connecting_corridors = level_copy.get_corridors_by_room(room_name)
+				if len(connecting_corridors) > 0:
+					try:
+						connecting_corridor = connecting_corridors[[c.room_to for c in connecting_corridors].index(room_name)]
+						room_from = level_copy.rooms[connecting_corridor.room_from]
+						room.coords = get_new_coords(coords=room_from.coords,
+													direction=connecting_corridor.direction,
+													n=1)
+						for other_corridor in connecting_corridors:
+							if other_corridor.room_from == room.name:
+								other_corridor.coords = [get_new_coords(coords=room.coords,
+																		direction=other_corridor.direction,
+																		n=x) for x in range(1, other_corridor.length + 1)]
+					except ValueError:
+						pass
+					
+				updating_rooms.remove(room_name)
+
+		# changing_rooms, _ = level_copy.get_level_subset(corridor=new_corridor, opposite_direction=False)
+
+		# for room in changing_rooms.values():
+		# 	connecting_corridors = level_copy.get_corridors_by_room(room.name)
+		# 	connecting_corridor = connecting_corridors[[c.room_to for c in connecting_corridors].index(room.name)]
+		# 	room_from = level_copy.rooms[connecting_corridor.room_from]
+		# 	room.coords = get_new_coords(coords=room_from.coords, 
+		# 								 direction=connecting_corridor.direction,
+		# 								 n=1)
+		# 	for other_corridor in connecting_corridors:
+		# 		if other_corridor.room_from == room.name:
+		# 			other_corridor.coords = [get_new_coords(coords=room.coords,
+		# 													direction=other_corridor.direction,
+		# 													n=x) for x in range(1, other_corridor.length + 1)]
+
+		level.rooms = level_copy.rooms
+		level.corridors = level_copy.corridors
+		level.connections = level_copy.connections
+		
+
+		# # Make a copy of parts of the level that would change and that would be fixed
+		# changing_rooms, changing_corridors = level.get_level_subset(corridor=corridor, opposite_direction=False)
+		# fixed_rooms, fixed_corridors = level.get_level_subset(corridor=corridor, opposite_direction=True)
+		# changing_corridors.insert(0, corridor)  # first element since changes are cascaded
+		# changing_rooms = {x.name: copy.deepcopy(x) for x in changing_rooms}
+		# changing_corridors = {x.name: copy.deepcopy(x) for x in changing_corridors}
+		# fixed_rooms = {x.name: copy.deepcopy(x) for x in fixed_rooms}
+		# fixed_corridors = {x.name: copy.deepcopy(x) for x in fixed_corridors}
+		# # Apply rotations first
+		# curr_dir_enum = get_enum_by_value(Direction, corridor.direction)
+		# if dir_enum != curr_dir_enum:
+		# 	rotated = []
+		# 	rotate_by = get_rotation(from_direction=curr_dir_enum, to_direction=dir_enum)
+		# 	for c in changing_corridors.values():
+		# 		if c.name not in rotated:
+		# 			c.direction = get_rotated_direction(direction=curr_dir_enum, rotate_by=rotate_by)
+		# 			# room_from may be in fixed_rooms
+		# 			if c.room_from in fixed_rooms.keys():
+		# 				from_coords = fixed_rooms[c.room_from].coords
+		# 			else:
+		# 				from_coords = changing_rooms[c.room_from].coords
+		# 			c.coords = [get_new_coords(coords=from_coords,
+		# 			                           direction=dir_enum,
+		# 			                           n=x) for x in range(1, c.length + 1)]
+		# 			# update the coordinates of the room_to
+		# 			changing_rooms[c.room_to].coords = get_new_coords(coords=c.coords[-1],
+		# 			                                                  direction=dir_enum,
+		# 			                                                  n=1)
+		# 			rotated.append(c.name)
+		# # Apply corridor length change
+		# if corridor_length != corridor.length:
+		# 	updated = []
+		# 	changing_corridors[corridor.name].length = corridor_length
+		# 	for c in changing_corridors.values():
+		# 		if c.name not in updated:
+		# 			if c.room_from in fixed_rooms.keys():
+		# 				from_coords = fixed_rooms[c.room_from].coords
+		# 			else:
+		# 				from_coords = changing_rooms[c.room_from].coords
+		# 			c.coords = [get_new_coords(coords=from_coords,
+		# 			                           direction=c.direction,
+		# 			                           n=x) for x in range(1, c.length + 1)]
+		# 			changing_rooms[c.room_to].coords = get_new_coords(coords=c.coords[-1],
+		# 			                                                  direction=c.direction,
+		# 			                                                  n=1)
+		# 			updated.append(c.name)
+		# # Check for intersections with the fixed part of the level
+		# for changing_room in changing_rooms.values():
+		# 	for fixed_room in fixed_rooms.values():
+		# 		if changing_room.coords == fixed_room.coords:
+		# 			raise AssertionError(f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_room.name} intersect with {fixed_room.name}')
+		# 	for fixed_corridor in fixed_corridors.values():
+		# 		if changing_room.coords in fixed_corridor.coords:
+		# 			raise AssertionError(
+		# 				f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_room.name} intersect with {fixed_corridor.name}')
+		# for changing_corridor in changing_corridors.values():
+		# 	for fixed_room in fixed_rooms.values():
+		# 		if fixed_room.coords in changing_corridor.coords:
+		# 			raise AssertionError(
+		# 				f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_corridor.name} intersect with {fixed_room.name}')
+		# 	for fixed_corridor in fixed_corridors.values():
+		# 		if len(set(changing_corridor.coords).difference(fixed_corridor.coords)) > 0:
+		# 			raise AssertionError(
+		# 				f'Could not update corridor between {room_from_name} and {room_to_name}: updated corridor would results in {changing_corridor.name} intersect with {fixed_corridor.name}')
+		# # If everything is fine, update the level (and the connections)
+		# # remove old connection
+		# level.connections[corridor.room_from][get_enum_by_value(Direction, corridor.direction)] = ''
+		# level.connections[corridor.room_to][opposite_direction[get_enum_by_value(Direction, corridor.direction)]] = ''
+		# # update rooms
+		# for room_name in changing_rooms.keys():
+		# 	level.rooms[room_name] = changing_rooms[room_name]
+		# # update corridors
+		# for corridor_name in changing_corridors.keys():
+		# 	level.corridors[corridor_name] = changing_corridors[corridor_name]
+		# # update connections
+		# for changing_corridor in changing_corridors.values():
+		# 	level.connections[changing_corridor.room_from][get_enum_by_value(Direction, changing_corridor.direction)] = changing_corridor.room_to
+		# 	level.connections[changing_corridor.room_to][opposite_direction[get_enum_by_value(Direction, changing_corridor.direction)]] = changing_corridor.room_from
+		# # Get the updated corridor
+		# corridor = level.corridors[corridor.name]
+		# # Update encounters and sprites if the length of the corridor has changed
+		# if len(corridor.encounters) != corridor.length:
+		# 	if len(corridor.encounters) > corridor.length:
+		# 		# Drop extra encounters
+		# 		corridor.encounters = corridor.encounters[:corridor.length]
+		# 		# Drop extra sprites
+		# 		last_sprite = corridor.sprites[-1]  # Last sprite is kept
+		# 		corridor.sprites = corridor.sprites[0:corridor.length + 1] + [last_sprite]
+		# 	else:
+		# 		while len(corridor.encounters) < corridor.length:
+		# 			# Add new, empty encounters
+		# 			corridor.encounters.append(Encounter())
+		# 			# Add empty sprite
+		# 			corridor.sprites.insert(-2, None)
+		level.current_room = new_corridor.name
 		return f'Updated corridor between {room_from_name} and {room_to_name}.'
 	
 	
