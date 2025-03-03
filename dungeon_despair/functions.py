@@ -441,10 +441,10 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(loot='The description of the loot in the treasure')
 	@LibParam(trapped_chance='The chance that this treasure\'s trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The damage this treasure deals if the internal trap is triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The type of modifier this treasure applies when triggered. Set to "no-modifier" if no modifier should be applied, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The type of modifier this treasure applies when triggered. Set to "no-modifier" if no modifier should be applied or if trapped_chance is 0, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The number of turns the modifier is active for')
-	@LibParam(modifier_amount=f'The amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
+	@LibParam(modifier_amount=f'The amount the modifier applies. A modifier exists only when trapped_chance is greater than 0. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
 	def add_treasure(self, level: Level,
 	                 room_name: str,
 	                 name: str,
@@ -604,7 +604,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 	@LibParam(loot='The updated loot description of the treasure')
 	@LibParam(trapped_chance='The updated chance that this treasure\'s trap gets triggered (between 0.0 and 1.0)')
 	@LibParam(dmg=f'The updated damage this treasure deals if the internal trap is triggered. Must be between {config.min_base_dmg} and {config.max_base_dmg}.')
-	@LibParam(modifier_type=f'The updated type of modifier this treasure applies when triggered. Set to "no-modifier" to remove the modifier, else set it to one of {", ".join([x.value for x in ModifierType])}.')
+	@LibParam(modifier_type=f'The updated type of modifier this treasure applies when triggered. Set to "no-modifier" to remove the modifier or if trapped_chance is 0, else set it to one of {", ".join([x.value for x in ModifierType])}.')
 	@LibParam(modifier_chance='The updated chance that the modifier is applied to a target (between 0.0 and 1.0)')
 	@LibParam(modifier_turns='The updated number of turns the modifier is active for')
 	@LibParam(modifier_amount=f'The updated amount the modifier applies. If the modifier is "bleed" or "heal", the value must be between {config.min_base_dmg} and {config.max_base_dmg}, otherwise it must be between 0.0 and 1.0.')
