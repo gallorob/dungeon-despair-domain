@@ -63,7 +63,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			assert room_from != '', f'Could not add {name} to the level: room_from must be set if there exists a current room (current room is {level.current_room}).'
 			assert direction != '', f'Could not add {name} to the level: direction must be set if there exists a current room (current room is {level.current_room}).'
 		if room_from != '':
-			assert level.current_room not in level.corridors.keys(), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either the rooms connected by the corridor {level.current_room}.'
+			assert room_from not in level.corridors.keys(), f'Could not add {name} to the level: Cannot add a room from a corridor, try adding the room from either the rooms connected by the corridor {level.current_room}.'
 			assert room_from in level.rooms.keys(), f'{room_from} is not a valid room name.'
 			dir_enum = get_enum_by_value(Direction, direction)
 			assert dir_enum is not None, f'Could not add {name} to the level: {direction} is not a valid direction.'
@@ -304,7 +304,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		new_corridor = Corridor(room_from=room_from_name, room_to=room_to_name,
 		                        name=make_corridor_name(room_from_name, room_to_name),
 		                        length=corridor_length,
-		                        encounters=ref_corridor.encounters,  # TODO: get encounters from ref_corridor
+		                        encounters=ref_corridor.encounters,
 		                        direction=dir_enum,
 		                        coords=[get_new_coords(coords=level_copy.rooms[room_from_name].coords,
 												 	   direction=dir_enum,
