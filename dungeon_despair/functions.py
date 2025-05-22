@@ -325,7 +325,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 					# Add empty sprite
 					new_corridor.sprites.insert(-2, None)
 		if room_from_reference_name != room_from_name or room_to_reference_name != room_to_name:
-			new_corridor.sprites = [None for _ in range(new_corridor.length)]
+			new_corridor.sprites = []
 		
 		# Rotate room_from connections and subsequent corridors if the direction is different
 		if get_enum_by_value(Direction, ref_corridor.direction) != dir_enum:
