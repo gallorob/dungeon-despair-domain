@@ -416,6 +416,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert room_name != '', 'Parameter room_name should be provided.'
 		assert name != '', 'Enemy name should be provided.'
 		assert description != '', 'Enemy description should be provided.'
+		assert species != '', 'Enemy species should be provided.'
 		assert config.min_hp <= hp <= config.max_hp, f'Invalid hp value: {hp}; should be between {config.min_hp} and  {config.max_hp}.'
 		assert config.min_dodge <= dodge <= config.max_dodge, f'Invalid dodge value: {dodge}; should be between {config.min_dodge} and  {config.max_dodge}.'
 		assert config.min_prot <= prot <= config.max_prot, f'Invalid prot value: {prot}; should be between {config.min_prot} and  {config.max_prot}.'
