@@ -23,7 +23,7 @@ class Hero(Entity):
 	
 	max_hp: float = Field(-1, description="The hero max HP")
 
-	type: Literal["hero"] = Field("hero", required=True)
+	type: Literal["hero"]
 	
 	def __str__(self):
 		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'

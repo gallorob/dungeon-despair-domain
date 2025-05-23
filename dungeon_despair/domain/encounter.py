@@ -11,7 +11,7 @@ from dungeon_despair.domain.utils import EntityEnum
 
 
 EntityItem = Annotated[
-    Union[Enemy, Trap, Treasure],
+    Enemy | Trap | Treasure,
     Field(discriminator="type")
 ]
 
