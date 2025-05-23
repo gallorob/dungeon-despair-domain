@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ class Encounter(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    entities: Dict[str, List[Entity]] = Field(
+    entities: Dict[str, List[Union[Enemy, Trap, Treasure]]] = Field(
         default={k.value: [] for k in EntityEnum},
         description="The entities for this encounter.", required=True)
 
