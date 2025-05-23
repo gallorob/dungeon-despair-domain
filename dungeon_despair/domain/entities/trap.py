@@ -11,7 +11,7 @@ class Trap(Entity):
 	dmg: float = Field(..., description="The instant damage this trap deals to the hero once triggered", required=True)
 	modifier: Optional[Modifier] = Field(None, description="The modifier the trap could apply to the hero once triggered", required=False)
 	
-	type: Literal["trap"]
+	type: Literal["trap"] = Field("trap", required=True)
 
 	def __str__(self):
 		return f'{super().__str__()} Effect={self.effect} Chance={self.chance} DMG={self.dmg} Modifier={self.modifier}'

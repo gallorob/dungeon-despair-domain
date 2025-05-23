@@ -11,7 +11,7 @@ class Treasure(Entity):
 	dmg: float = Field(..., description="The damage this treasure deals to a hero if the internal trap is triggered", required=True)
 	modifier: Optional[Modifier] = Field(None, description="The modifier the treasure could apply to the hero if the internal trap is triggered", required=False)
 	
-	type: Literal["treasure"]
+	type: Literal["treasure"] = Field("treasure", required=True)
 
 	def __str__(self):
 		return f'{super().__str__()} Loot={self.loot} Trapped Chance={self.trapped_chance} DMG={self.dmg} Modifier={str(self.modifier)}'
