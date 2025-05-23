@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 from pydantic import Field
 
@@ -16,6 +16,8 @@ class Enemy(Entity):
 	spd: float = Field(..., description="The enemy spd stat.", required=True)
 	attacks: List[Attack] = Field([], description='The enemy attacks', required=True)
 	modifiers: List[Modifier] = Field([], description="The enemy's modifiers", required=True)
+	
+	type: Literal["enemy"]
 	
 	def __str__(self):
 		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
