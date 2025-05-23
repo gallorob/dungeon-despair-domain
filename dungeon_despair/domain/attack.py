@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field
 
 from dungeon_despair.domain.modifier import Modifier
@@ -17,4 +18,4 @@ class Attack(BaseModel):
 	base_dmg: float = Field(..., description='The base attack damage. Use a negative value for "heal" attacks to indicate the amount of HP that can be recovered.', required=True)
 	accuracy: float = Field(..., description='The attack accuracy (a percentage between 0.0 and 1.0).')
 	active: bool = Field(default=True, description='Whether the attack can be executed', required=False)
-	modifier: Modifier = Field(None, description="The modifier the attack could have on the target.", required=False)
+	modifier: Optional[Modifier] = Field(None, description="The modifier the attack could have on the target.", required=False)

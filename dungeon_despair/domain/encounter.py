@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Annotated, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -9,11 +9,17 @@ from dungeon_despair.domain.entities.treasure import Treasure
 from dungeon_despair.domain.utils import EntityEnum
 
 
+EntityItem = Annotated[
+    Union[Enemy, Trap, Treasure],
+    Field(discriminator="type")
+]
+
+
 class Encounter(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    entities: Dict[str, List[Union[Enemy, Trap, Treasure]]] = Field(
+    entities: Dict[str, List[EntityItem]] = Field(
         default={k.value: [] for k in EntityEnum},
         description="The entities for this encounter.", required=True)
 

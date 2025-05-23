@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 from pydantic import Field
 
@@ -22,6 +22,8 @@ class Hero(Entity):
 	modifiers: List[Modifier] = Field([], description="The hero's modifiers", required=True)
 	
 	max_hp: float = Field(-1, description="The hero max HP")
+
+	type: Literal["hero"]
 	
 	def __str__(self):
 		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
