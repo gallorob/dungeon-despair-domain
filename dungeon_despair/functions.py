@@ -426,7 +426,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			EntityEnum.ENEMY.value]], f'Could not add enemy: {name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		assert len(encounter.entities.get(EntityEnum.ENEMY.value,
 		                                  [])) < config.max_enemies_per_encounter, f'Could not add enemy: there are already {config.max_enemies_per_encounter} enemy(es) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed.'
-		enemy = Enemy(name=name, description=description, species=species, hp=hp, dodge=dodge, prot=prot, spd=spd, max_hp=hp)
+		enemy = Enemy(name=name, description=description, species=species, hp=hp, dodge=dodge, prot=prot, spd=spd, max_hp=hp, type="enemy")
 		encounter.add_entity(EntityEnum.ENEMY, enemy)
 		level.current_room = room_name
 		return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
@@ -474,7 +474,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert 0 <= len(encounter.entities.get(EntityEnum.TREASURE.value,
 		                                      [])) < config.max_treasures_per_encounter, f'Could not add treasure: there is already {config.max_treasures_per_encounter} treasure(s) in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}, which is the maximum number allowed.'
 		assert 0.0 <= trapped_chance <= 1.0, f'trapped_chance must be a value between 0.0 and 1.0; you passed {trapped_chance}.'
-		treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg)
+		treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg, type="treasure")
 		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add treasure: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
@@ -534,7 +534,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 			EntityEnum.TRAP.value]], f'Could not add trap: {name} already exists in {corridor_name} in cell {cell_index}.'
 		assert 0 <= len(encounter.entities.get(EntityEnum.TRAP.value, [])) < config.max_traps_per_encounter, f'Could not add trap: there is already {config.max_traps_per_encounter} trap(s) in {corridor_name} in cell {cell_index}.'
 		assert 0.0 <= chance <= 1.0, f'chance must be a value between 0.0 and 1.0; you passed {chance}.'
-		trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg)
+		trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg, type="trap")
 		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not add trap: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
@@ -587,7 +587,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert ref_enemy is not None, f'{reference_name} does not exist in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		assert (reference_name == name) or (name not in [enemy.name for enemy in encounter.enemies]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		updated_enemy = Enemy(name=name, description=description, species=species,
-		                      hp=hp, dodge=dodge, prot=prot, spd=spd, max_hp=hp)
+		                      hp=hp, dodge=dodge, prot=prot, spd=spd, max_hp=hp, type="enemy")
 		updated_enemy.attacks = ref_enemy.attacks
 		encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
 		level.current_room = room_name
@@ -639,7 +639,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert (reference_name == name) or (name not in [treasure.name for treasure in encounter.entities[
 			EntityEnum.TREASURE.value]]), f'{name} already exists in {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
 		assert 0.0 <= trapped_chance <= 1.0, f'trapped_chance must be a value between 0.0 and 1.0; you passed {trapped_chance}.'
-		updated_treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg)
+		updated_treasure = Treasure(name=name, description=description, loot=loot, trapped_chance=trapped_chance, dmg=dmg, type="treasure")
 		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not update treasure: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
@@ -703,7 +703,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 		assert (reference_name == name) or (name not in [trap.name for trap in encounter.entities[
 			EntityEnum.TRAP.value]]), f'{name} already exists in {corridor_name} in cell {cell_index}.'
 		assert 0.0 <= chance <= 1.0, f'chance must be a value between 0.0 and 1.0; you passed {chance}.'
-		updated_trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg)
+		updated_trap = Trap(name=name, description=description, effect=effect, chance=chance, dmg=dmg, type="trap")
 		if modifier_type != 'no-modifier':
 			assert modifier_type in [x.value for x in ModifierType], f'Could not update trap: {modifier_type} is not a valid modifier type.'
 			assert 0.0 <= modifier_chance <= 1.0, f'modifier_chance must be a value between 0.0 and 1.0; you passed {modifier_chance}.'
