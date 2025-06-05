@@ -1,12 +1,12 @@
-from attack import Attack, ActionType
-from configs import Config
-from corridor import Corridor
-from encounter import Encounter
-from level import Level
-from modifier import Modifier
-from room import Room
-from scenario import ScenarioType, check_level_playability
-from utils import (
+from .attack import Attack, ActionType
+from .configs import Config
+from .corridor import Corridor
+from .encounter import Encounter
+from .level import Level
+from .modifier import Modifier
+from .room import Room
+from .scenario import ScenarioType, check_level_playability
+from .utils import (
     Direction,
     ordered_directions,
     opposite_direction,
