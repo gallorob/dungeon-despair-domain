@@ -19,3 +19,6 @@ class Attack(BaseModel):
 	accuracy: float = Field(..., description='The attack accuracy (a percentage between 0.0 and 1.0).')
 	active: bool = Field(default=True, description='Whether the attack can be executed', required=False)
 	modifier: Optional[Modifier] = Field(None, description="The modifier the attack could have on the target.", required=False)
+
+	def __str__(self) -> str:
+		return f'Name: {self.name} ({self.type}) From: {self.starting_positions} To: {self.target_positions} DMG: {self.base_dmg} Accuracy: {self.accuracy} Modifier: {str(self.modifier)}'

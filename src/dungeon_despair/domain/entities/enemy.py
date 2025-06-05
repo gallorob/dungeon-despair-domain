@@ -20,4 +20,4 @@ class Enemy(Entity):
 	type: Literal["enemy"]
 	
 	def __str__(self):
-		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd}'
+		return f'{super().__str__()} Species={self.species} HP={self.hp} DODGE={self.dodge} PROT={self.prot} SPD={self.spd} Attacks: [{";".join([str(attack) for attack in self.attacks])}]'
