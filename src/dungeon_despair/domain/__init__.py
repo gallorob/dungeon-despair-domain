@@ -23,4 +23,4 @@ from .utils import (
     check_intersection_coords,
     check_if_in_loop,
 )
-from entities import *
+from .entities import *

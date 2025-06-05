@@ -1,2 +1,2 @@
 from .functions import DungeonCrawlerFunctions
-from domain import *
+from .domain import *
