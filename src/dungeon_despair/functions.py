@@ -975,7 +975,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     @AILibFunction(
         name="update_enemy_properties",
-        description="Update properties of an enemy in a room or corridor. Pass the current properties if they're not being updated. To move an enemy to a different room or corridor, remove it first and then add it again.",
+        description="Update properties of an enemy in a room or corridor. Pass the current properties if they're not being updated.",
         required=[
             "room_name",
             "cell_index",
@@ -1070,7 +1070,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     @AILibFunction(
         name="update_treasure_properties",
-        description="Update properties of a treasure in a room or corridor. Pass the current properties if they're not being updated. To move a treasure to a different room or corridor, remove it first and then add it again.",
+        description="Update properties of a treasure in a room or corridor. Pass the current properties if they're not being updated.",
         required=[
             "room_name",
             "cell_index",
@@ -1193,7 +1193,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     @AILibFunction(
         name="update_trap_properties",
-        description="Update properties of a trap in a corridor. Pass the current properties if they're not being updated. To move a trap to a different corridor or corridor cell, remove it first and then add it again.",
+        description="Update properties of a trap in a corridor. Pass the current properties if they're not being updated.",
         required=[
             "corridor_name",
             "cell_index",
@@ -1312,7 +1312,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     @AILibFunction(
         name="remove_entity",
-        description="Remove an entity (an enemy, a trap, or a treasure) from a room or corridor",
+        description="Remove an entity (an enemy, a trap, or a treasure) from a room or corridor. If asked to move an entity, remove it from the current room and add it to the target room.",
         required=["room_name", "cell_index", "entity_name", "entity_type"],
     )
     @LibParam(room_name="The room (or corridor) name")
