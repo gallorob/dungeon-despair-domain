@@ -1492,7 +1492,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
 
     @AILibFunction(
         name="update_attack",
-        description="Update an attack of an enemy. Pass the current properties if they're not being updated.",
+        description="Update the properties of an attack of an enemy. Pass the current properties if they're not being updated.",
         required=[
             "room_name",
             "cell_index",
