@@ -28,6 +28,7 @@ from dungeon_despair.domain.utils import (
     make_corridor_name,
     ModifierType,
     opposite_direction,
+    set_entity_cost,
 )
 
 
@@ -733,6 +734,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             max_hp=hp,
             type="enemy",
         )
+        set_entity_cost(entity=enemy, entity_type=EntityEnum.ENEMY)
         encounter.add_entity(EntityEnum.ENEMY, enemy)
         level.current_room = room_name
         return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
@@ -850,6 +852,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 turns=modifier_turns,
                 amount=modifier_amount,
             )
+        set_entity_cost(entity=treasure, entity_type=EntityEnum.TREASURE)
         encounter.add_entity(EntityEnum.TREASURE, treasure)
         level.current_room = room_name
         return f'Added {name} to {room_name}{" in cell " + str(cell_index) if cell_index != -1 else ""}.'
@@ -969,6 +972,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 turns=modifier_turns,
                 amount=modifier_amount,
             )
+        set_entity_cost(entity=trap, entity_type=EntityEnum.TRAP)
         encounter.add_entity(EntityEnum.TRAP, trap)
         level.current_room = corridor_name
         return f"Added {name} in {corridor_name} in cell {cell_index}."
@@ -1064,6 +1068,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             type="enemy",
         )
         updated_enemy.attacks = ref_enemy.attacks
+        set_entity_cost(entity=updated_enemy, entity_type=EntityEnum.ENEMY)
         encounter.replace_entity(reference_name, EntityEnum.ENEMY, updated_enemy)
         level.current_room = room_name
         return f"Updated {reference_name} properties in {room_name}."
@@ -1187,6 +1192,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 turns=modifier_turns,
                 amount=modifier_amount,
             )
+        set_entity_cost(entity=updated_treasure, entity_type=EntityEnum.TREASURE)
         encounter.replace_entity(reference_name, EntityEnum.TREASURE, updated_treasure)
         level.current_room = room_name
         return f"Updated {reference_name} properties in {room_name}."
@@ -1306,6 +1312,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 turns=modifier_turns,
                 amount=modifier_amount,
             )
+        set_entity_cost(entity=updated_trap, entity_type=EntityEnum.TRAP)
         encounter.replace_entity(reference_name, EntityEnum.TRAP, updated_trap)
         level.current_room = corridor_name
         return f"Updated {reference_name} properties in {corridor_name}."

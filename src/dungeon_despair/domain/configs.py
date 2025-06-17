@@ -22,7 +22,9 @@ class Config(Namespace):
     min_base_dmg: float = 0.0
     max_base_dmg: float = 5.0
 
-    temp_dir: str = './temp_assets'
+    temp_dir: str = "./temp_assets"
+
+    encounter_cost: float = 5.0
 
 
 config = Config()
