@@ -1494,6 +1494,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 amount=modifier_amount,
             )
         enemy.attacks.append(attack)
+        set_entity_cost(entity=enemy, entity_type=EntityEnum.ENEMY)
         level.current_room = room_name
         return f"Added {name} to {enemy_name}."
 
@@ -1646,6 +1647,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 amount=modifier_amount,
             )
         enemy.attacks[idx] = attack
+        set_entity_cost(entity=enemy, entity_type=EntityEnum.ENEMY)
         level.current_room = room_name
         return f"Updated {reference_name} of {enemy_name}."
 
@@ -1677,5 +1679,6 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         ], f"{name} is not an attack for {enemy_name}."
         idx = [attack.name for attack in enemy.attacks].index(name)
         enemy.attacks.pop(idx)
+        set_entity_cost(entity=enemy, entity_type=EntityEnum.ENEMY)
         level.current_room = room_name
         return f"Removed {name} from {enemy_name}."
