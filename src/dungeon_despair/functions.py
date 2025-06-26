@@ -1460,6 +1460,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
         assert (
             len(enemy.attacks) < config.max_num_attacks
         ), f"Enemy {enemy.name} has {config.max_num_attacks}, which is the maximum amount allowed."
+        assert name not in [
+            attack.name for attack in enemy.attacks
+        ], f"{enemy.name} already has a {name} attack."
         attack = Attack(
             name=name,
             description=description,
