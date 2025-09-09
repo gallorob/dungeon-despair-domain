@@ -521,9 +521,9 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
                 # Drop extra sprites
 
                 last_sprite = new_corridor.sprites[-1]  # Last sprite is kept
-                new_corridor.sprites = new_corridor.sprites[
-                    0 : new_corridor.length + 1
-                ] + [last_sprite]
+                new_corridor.sprites = new_corridor.sprites[: new_corridor.length] + [
+                    last_sprite
+                ]
             else:
                 while len(new_corridor.encounters) < new_corridor.length:
                     # Add new, empty encounters
