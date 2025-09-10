@@ -549,7 +549,7 @@ class DungeonCrawlerFunctions(GPTFunctionLibrary):
             for connected_corridor in connected_corridors:
                 connected_corridor.direction = get_rotated_direction(
                     get_enum_by_value(Direction, connected_corridor.direction), rotation
-                )
+                ).value
                 if connected_corridor.room_to not in rotated_rooms:
                     rotated_rooms.append(connected_corridor.room_to)
                     connections_copy = copy.deepcopy(
